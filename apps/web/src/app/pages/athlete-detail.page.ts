@@ -1,6 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import type { Athlete, AthleteOverview, Monitoring, PaceTable } from '@kadro/shared';
+import type { Athlete, AthleteOverview, Monitoring, Note, PaceTable } from '@kadro/shared';
 import { formatDuration, formatPace } from '@kadro/shared';
 import { ApiClient } from '../core/api-client';
 import { ALERT_LABELS, alertDetail } from './dashboard.page';
@@ -22,7 +23,7 @@ const FORM_LABELS: Record<string, string> = {
 
 @Component({
   selector: 'app-athlete-detail-page',
-  imports: [RouterLink],
+  imports: [RouterLink, FormsModule],
   template: `
     @if (athlete(); as a) {
       <a routerLink="/athletes" class="back muted">← Athlètes</a>
@@ -117,7 +118,7 @@ const FORM_LABELS: Record<string, string> = {
               <p class="muted">Rien encore.</p>
             }
             @for (s of o.recentSessions; track s.id) {
-              <div class="recent">
+              <a class="recent" [routerLink]="['/activites', s.id]">
                 <span class="r-name">{{ s.name ?? (s.sport === 'strength' ? 'Renfo libre' : 'Sortie libre') }}</span>
                 <span class="muted">{{ s.startedAt.slice(0, 10) }}</span>
                 <span class="r-meta">
@@ -128,12 +129,29 @@ const FORM_LABELS: Record<string, string> = {
                   @if (s.loadUa) {
                     · {{ s.loadUa }} UA
                   }
+                  @if (s.feedbackRpe != null) {
+                    · RPE {{ s.feedbackRpe }}
+                  }
                 </span>
-              </div>
+              </a>
             }
           }
         </section>
       </div>
+      <section class="card mono">
+        <h2>Notes privées</h2>
+        <form class="note-form" (ngSubmit)="addNote()">
+          <input class="input" name="noteDraft" [(ngModel)]="noteDraft" placeholder="Une note que l'athlète ne verra jamais…" />
+          <button class="btn" type="submit" [disabled]="!noteDraft.trim()">Ajouter</button>
+        </form>
+        @for (note of notes(); track note.id) {
+          <div class="note">
+            <span class="muted n-date">{{ note.date }}</span>
+            <span class="n-text">{{ note.text }}</span>
+            <button class="link-del" type="button" (click)="deleteNote(note)">×</button>
+          </div>
+        }
+      </section>
       @if (monitoring(); as m) {
         <section class="card mono">
           <h2>Monitoring — 7 jours</h2>
@@ -171,7 +189,15 @@ const FORM_LABELS: Record<string, string> = {
     .bar-value { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--accent-ink); }
     .bar-label { font-size: 10px; }
     .foot { margin: 10px 0 0; font-size: 12px; }
-    .recent { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .recent { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink); }
+    a.recent:hover .r-name { color: var(--accent-ink); }
+    .note-form { display: flex; gap: 8px; margin-bottom: 12px; }
+    .note { display: flex; align-items: baseline; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .note:last-child { border-bottom: none; }
+    .n-date { font-variant-numeric: tabular-nums; }
+    .n-text { flex: 1; }
+    .link-del { background: none; border: none; color: var(--ink3); cursor: pointer; font-size: 14px; padding: 0 4px; }
+    .link-del:hover { color: var(--bad); }
     .recent:last-child { border-bottom: none; }
     .r-name { font-weight: 600; flex: 1; }
     .r-meta { font-variant-numeric: tabular-nums; color: var(--ink2); }
@@ -189,22 +215,41 @@ export class AthleteDetailPage implements OnInit {
   readonly paces = signal<PaceTable | null>(null);
   readonly overview = signal<AthleteOverview | null>(null);
   readonly monitoring = signal<Monitoring | null>(null);
+  readonly notes = signal<Note[]>([]);
+  noteDraft = '';
+  private athleteId = '';
   readonly maxLoad = computed(() =>
     Math.max(1, ...(this.overview()?.loadByWeek.map((w) => w.loadUa) ?? [1])),
   );
 
   async ngOnInit(): Promise<void> {
-    const id = this.route.snapshot.paramMap.get('id');
-    const [athlete, paces, overview, monitoring] = await Promise.all([
+    const id = this.route.snapshot.paramMap.get('id') ?? '';
+    this.athleteId = id;
+    const [athlete, paces, overview, monitoring, notes] = await Promise.all([
       this.api.get<Athlete>(`/athletes/${id}`),
       this.api.get<PaceTable>(`/athletes/${id}/paces`),
       this.api.get<AthleteOverview>(`/athletes/${id}/overview`),
       this.api.get<Monitoring>(`/athletes/${id}/monitoring`),
+      this.api.get<Note[]>(`/athletes/${id}/notes`),
     ]);
     this.athlete.set(athlete);
     this.paces.set(paces);
     this.overview.set(overview);
     this.monitoring.set(monitoring);
+    this.notes.set(notes);
+  }
+
+  async addNote(): Promise<void> {
+    const text = this.noteDraft.trim();
+    if (!text) return;
+    const note = await this.api.post<Note>(`/athletes/${this.athleteId}/notes`, { text });
+    this.notes.update((list) => [note, ...list]);
+    this.noteDraft = '';
+  }
+
+  async deleteNote(note: Note): Promise<void> {
+    await this.api.delete(`/athletes/${this.athleteId}/notes/${note.id}`);
+    this.notes.update((list) => list.filter((n) => n.id !== note.id));
   }
 
   pace(secPerKm: number): string {

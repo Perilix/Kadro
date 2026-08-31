@@ -36,6 +36,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/me-progression.page').then((m) => m.MeProgressionPage),
       },
       {
+        path: 'activites/:id',
+        loadComponent: () => import('./pages/activity-detail.page').then((m) => m.ActivityDetailPage),
+      },
+      {
         path: 'messages',
         loadComponent: () => import('./pages/messages.page').then((m) => m.MessagesPage),
       },
@@ -61,6 +65,10 @@ export const routes: Routes = [
       {
         path: 'athletes/:id',
         loadComponent: () => import('./pages/athlete-detail.page').then((m) => m.AthleteDetailPage),
+      },
+      {
+        path: 'activites/:id',
+        loadComponent: () => import('./pages/activity-detail.page').then((m) => m.ActivityDetailPage),
       },
       {
         path: 'planning',

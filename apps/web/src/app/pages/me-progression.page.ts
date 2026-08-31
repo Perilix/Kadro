@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import type { AthleteOverview, ExerciseStats, PaceTable } from '@kadro/shared';
 import { formatDuration, formatPace } from '@kadro/shared';
 import { ApiClient } from '../core/api-client';
@@ -13,6 +14,7 @@ const ZONE_LABELS: Record<string, string> = {
 
 @Component({
   selector: 'app-me-progression-page',
+  imports: [RouterLink],
   template: `
     <h1>Progression</h1>
     <section class="card">
@@ -79,7 +81,7 @@ const ZONE_LABELS: Record<string, string> = {
           <p class="muted">Rien encore — vos activités apparaîtront ici.</p>
         }
         @for (s of o.recentSessions; track s.id) {
-          <div class="recent">
+          <a class="recent" [routerLink]="['/moi/activites', s.id]">
             <span class="r-name">{{ s.name ?? (s.sport === 'strength' ? 'Renfo libre' : 'Sortie libre') }}</span>
             <span class="muted">{{ s.startedAt.slice(0, 10) }}</span>
             <span class="r-meta">
@@ -91,7 +93,7 @@ const ZONE_LABELS: Record<string, string> = {
                 · {{ pace(s.avgPaceSecPerKm) }}
               }
             </span>
-          </div>
+          </a>
         }
       }
     </section>
@@ -111,7 +113,8 @@ const ZONE_LABELS: Record<string, string> = {
     .srow:last-of-type { border-bottom: none; }
     .srow strong { flex: 1; }
     .val { font-weight: 600; font-variant-numeric: tabular-nums; }
-    .recent { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .recent { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink); }
+    a.recent:hover .r-name { color: var(--accent-ink); }
     .recent:last-child { border-bottom: none; }
     .r-name { font-weight: 600; flex: 1; }
     .r-meta { font-variant-numeric: tabular-nums; color: var(--ink2); }
