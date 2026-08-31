@@ -1,0 +1,19 @@
+{
+  "name": "@kadro/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Types, DTOs zod et règles métier Kadro — sans framework (ni RxJS, ni hooks).",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

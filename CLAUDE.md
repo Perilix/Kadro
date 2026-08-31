@@ -2,10 +2,12 @@
 
 Plateforme de suivi d'athlètes pour coachs (course à pied + renforcement musculaire). Le coach paie, l'athlète est gratuit. Marchés visés : France, Suisse, Allemagne (FR / DE / EN).
 
-## État du projet (30 août 2026)
+## État du projet (31 août 2026)
 
 - **Maquette terminée** (64 écrans) : `design/maquette/dist/kadro-canvas.html` (canvas), `kadro-prototype.html` (prototype navigable), `kadro-vs-nolio-truecoach.html` (étude de marché). Sources générées par `design/maquette/src/build.mjs` (`node build.mjs` puis `node proto.mjs`).
-- **Aucune ligne de code produit.** Prochaine étape : schéma de données + contrat d'API, puis squelette du monorepo.
+- **Schéma de données validé** : `docs/SCHEMA.md` (22 collections) + contrat d'API `docs/API.md`. Toute évolution de modèle passe par ces docs d'abord.
+- **Monorepo en place** (pnpm workspaces) : `apps/api` (NestJS — auth JWT, invitation par code, santé), `packages/shared` (DTOs zod + règles métier testées), `packages/tokens` (généré depuis `design/maquette/src/lib.mjs`, ne pas éditer `dist/`). `apps/web` et `apps/mobile` n'existent pas encore.
+- Déploiement : `render.yaml` (blueprint) ; comptes et mise en route : `docs/SETUP.md`.
 - Décisions et contexte complet : `docs/DECISIONS.md`. Lis-le avant de proposer quoi que ce soit.
 
 ## Stack décidée

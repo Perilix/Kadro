@@ -1,0 +1,13 @@
+{
+  "name": "kadro",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm --filter @kadro/tokens build && pnpm --filter @kadro/shared build && pnpm --filter @kadro/api build",
+    "dev:api": "pnpm --filter @kadro/api start:dev",
+    "test": "pnpm -r test"
+  }
+}
