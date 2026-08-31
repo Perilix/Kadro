@@ -26,6 +26,8 @@ services:
         value: https://kadro-app.com/rejoindre
       - key: API_PUBLIC_URL
         value: https://kadro-api.onrender.com
+      - key: WEB_APP_URL
+        value: https://kadro-web.onrender.com
       - key: TOKENS_ENC_KEY
         generateValue: true
       - key: STRAVA_CLIENT_ID

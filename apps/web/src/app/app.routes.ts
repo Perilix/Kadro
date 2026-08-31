@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from './core/auth.guard';
+import { athleteGuard, coachGuard, guestGuard } from './core/auth.guard';
 
 export const routes: Routes = [
   {
@@ -18,8 +18,32 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/register.page').then((m) => m.RegisterPage),
   },
   {
+    path: 'moi',
+    canActivate: [athleteGuard],
+    loadComponent: () => import('./pages/athlete-shell.page').then((m) => m.AthleteShellPage),
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () => import('./pages/me-today.page').then((m) => m.MeTodayPage),
+      },
+      {
+        path: 'planning',
+        loadComponent: () => import('./pages/me-planning.page').then((m) => m.MePlanningPage),
+      },
+      {
+        path: 'messages',
+        loadComponent: () => import('./pages/messages.page').then((m) => m.MessagesPage),
+      },
+      {
+        path: 'profil',
+        loadComponent: () => import('./pages/me-profile.page').then((m) => m.MeProfilePage),
+      },
+    ],
+  },
+  {
     path: '',
-    canActivate: [authGuard],
+    canActivate: [coachGuard],
     loadComponent: () => import('./pages/shell.page').then((m) => m.ShellPage),
     children: [
       {

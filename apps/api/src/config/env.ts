@@ -12,6 +12,7 @@ export const zEnv = z.object({
   JOIN_URL_BASE: z.string().url().default('https://kadro-app.com/rejoindre'),
   API_PUBLIC_URL: z.string().url().default('http://localhost:3000'),
   MOBILE_REDIRECT_URL: z.string().default('kadro://connections'),
+  WEB_APP_URL: z.string().url().default('http://localhost:4200'),
   TOKENS_ENC_KEY: z.string().min(32).optional(),
   STRAVA_CLIENT_ID: z.string().optional(),
   STRAVA_CLIENT_SECRET: z.string().optional(),

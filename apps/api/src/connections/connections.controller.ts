@@ -32,8 +32,16 @@ export class ConnectionsController {
 
   @Get('connections/:provider/authorize')
   @UseGuards(JwtAccessGuard, AthleteGuard)
-  authorize(@CurrentUser() user: JwtPayload, @Param('provider') provider: string): AuthorizeUrl {
-    return this.connections.authorize(new Types.ObjectId(user.athleteId), provider);
+  authorize(
+    @CurrentUser() user: JwtPayload,
+    @Param('provider') provider: string,
+    @Query('platform') platform: string | undefined,
+  ): AuthorizeUrl {
+    return this.connections.authorize(
+      new Types.ObjectId(user.athleteId),
+      provider,
+      platform === 'web' ? 'web' : 'mobile',
+    );
   }
 
   @Get('connections/:provider/callback')

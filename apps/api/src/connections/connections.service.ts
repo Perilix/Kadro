@@ -23,6 +23,7 @@ interface OauthState {
   athleteId: string;
   provider: Provider;
   type: 'oauth_state';
+  platform: 'mobile' | 'web';
 }
 
 @Injectable()
@@ -45,19 +46,19 @@ export class ConnectionsService {
     return docs.map(toConnectionDto);
   }
 
-  authorize(athleteId: Types.ObjectId, provider: string): { url: string } {
+  authorize(athleteId: Types.ObjectId, provider: string, platform: 'mobile' | 'web'): { url: string } {
     if (provider !== 'strava') {
       throw new NotImplementedException({ code: 'connection.provider_not_supported' });
     }
     const state = this.jwt.sign(
-      { athleteId: athleteId.toString(), provider, type: 'oauth_state' } satisfies OauthState,
+      { athleteId: athleteId.toString(), provider, type: 'oauth_state', platform } satisfies OauthState,
       { secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'), expiresIn: '10m' },
     );
     return { url: this.strava.authorizeUrl(state) };
   }
 
   async handleCallback(provider: string, code: string | undefined, state: string | undefined): Promise<string> {
-    const redirect = this.config.getOrThrow<string>('MOBILE_REDIRECT_URL');
+    let redirect = this.config.getOrThrow<string>('MOBILE_REDIRECT_URL');
     if (provider !== 'strava' || !code || !state) return `${redirect}?status=error`;
     let payload: OauthState;
     try {
@@ -67,6 +68,9 @@ export class ConnectionsService {
       if (payload.type !== 'oauth_state') throw new Error('invalid');
     } catch {
       return `${redirect}?status=invalid_state`;
+    }
+    if (payload.platform === 'web') {
+      redirect = `${this.config.getOrThrow<string>('WEB_APP_URL')}/moi/profil`;
     }
     const athlete = await this.athletes.findById(payload.athleteId).exec();
     if (!athlete) return `${redirect}?status=error`;

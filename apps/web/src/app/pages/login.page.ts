@@ -46,7 +46,7 @@ export class LoginPage {
     this.error.set(null);
     try {
       await this.auth.login({ email: this.email, password: this.password });
-      await this.router.navigate(['/apercu']);
+      await this.router.navigate([this.auth.user()?.role === 'athlete' ? '/moi' : '/apercu']);
     } catch (err) {
       this.error.set(
         err instanceof ApiError && err.code === 'auth.invalid_credentials'
