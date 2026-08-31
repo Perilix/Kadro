@@ -83,6 +83,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/template-editor.page').then((m) => m.TemplateEditorPage),
       },
       {
+        path: 'bibliotheque/:id/modifier',
+        loadComponent: () => import('./pages/template-editor.page').then((m) => m.TemplateEditorPage),
+      },
+      {
         path: 'messages',
         loadComponent: () => import('./pages/messages.page').then((m) => m.MessagesPage),
       },

@@ -79,8 +79,9 @@ interface PaceRowView {
               <div class="muted d-meta">{{ tplMeta(t) }}</div>
             </div>
             <button class="btn" type="button" (click)="duplicate(t)"><ui-icon name="copy" [size]="18" />Dupliquer</button>
+            <a class="btn" [routerLink]="['/bibliotheque', t.id, 'modifier']"><ui-icon name="edit" [size]="18" />Modifier</a>
             <button class="btn" type="button" (click)="archive(t)">Archiver</button>
-            <a class="btn primary" routerLink="/planning"><ui-icon name="users" [size]="18" [sw]="2" />Assigner à…</a>
+            <a class="btn primary" routerLink="/planning" [queryParams]="{ template: t.id }"><ui-icon name="users" [size]="18" [sw]="2" />Assigner à…</a>
           </div>
           <div class="row d-cols">
             <div class="d-main">

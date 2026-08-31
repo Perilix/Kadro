@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import type { Athlete, Conversation, Message, Page } from '@kadro/shared';
+import type { Athlete, Conversation, Message, Page, SessionTemplate } from '@kadro/shared';
 import { ApiClient } from '../core/api-client';
 import { AuthStore } from '../core/auth-store';
 import { RealtimeService } from '../core/realtime.service';
@@ -72,9 +72,19 @@ import { StatusPillComponent, FORM_LEVELS } from '../ui/status-pill.component';
                 <div class="faint sep">{{ daySeparator(i) }}</div>
               }
               <div class="b-row" [class.mine]="m.senderId === myId">
-                <div class="bubble" [class.mine]="m.senderId === myId">
-                  {{ m.text ?? '[' + m.type + ']' }}
-                </div>
+                @if (m.type === 'template_card' || m.type === 'session_card') {
+                  <div class="row card-msg">
+                    <ui-icon [name]="m.type === 'template_card' ? 'library' : 'run'" [size]="18" />
+                    <div class="cm-txt">
+                      <div class="cm-name">{{ m.text ?? 'Séance' }}</div>
+                      <div class="cm-sub">{{ m.type === 'template_card' ? 'Modèle partagé' : 'Séance partagée' }}</div>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="bubble" [class.mine]="m.senderId === myId">
+                    {{ m.text ?? '[' + m.type + ']' }}
+                  </div>
+                }
                 <span class="faint b-time num">{{ time(m.sentAt) }}{{ m.senderId === myId && m.readAt ? ' · lu' : '' }}</span>
               </div>
             }
@@ -106,10 +116,18 @@ import { StatusPillComponent, FORM_LEVELS } from '../ui/status-pill.component';
             <div class="row fact"><span class="muted">Ratio A:C</span><span class="num strong">{{ sa.snapshot.acuteChronicRatio ?? '—' }}</span></div>
           </div>
           <div class="col share">
+            <span class="label">Partager dans la conversation</span>
+            <select class="input" [ngModel]="''" (ngModelChange)="shareTemplate($event)">
+              <option value="" disabled selected>Un modèle de séance…</option>
+              @for (t of templates(); track t.id) {
+                <option [value]="t.id">{{ t.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="col share">
             <span class="label">Raccourcis</span>
             <a class="btn left" [routerLink]="['/athletes', sa.id]"><ui-icon name="user" [size]="18" />Fiche athlète</a>
             <a class="btn left" routerLink="/planning"><ui-icon name="calendar" [size]="18" />Planning</a>
-            <a class="btn left" routerLink="/bibliotheque/nouvelle"><ui-icon name="run" [size]="18" />Nouvelle séance</a>
           </div>
         </aside>
       }
@@ -156,6 +174,10 @@ import { StatusPillComponent, FORM_LEVELS } from '../ui/status-pill.component';
     .btn.left { justify-content: flex-start; }
     .empty { padding: 16px; margin: 0; font-size: 13px; }
     .empty.center { align-self: center; margin: auto; }
+    .card-msg { gap: 10px; padding: 10px 14px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-ink); max-width: 78%; }
+    .cm-txt { line-height: 1.3; min-width: 0; }
+    .cm-name { font-weight: 600; font-size: 13.5px; }
+    .cm-sub { font-size: 12px; opacity: 0.85; }
   `,
 })
 export class MessagesPage implements OnInit, OnDestroy, AfterViewChecked {
@@ -170,6 +192,7 @@ export class MessagesPage implements OnInit, OnDestroy, AfterViewChecked {
   readonly messages = signal<Message[]>([]);
   readonly sending = signal(false);
   readonly selectedAthlete = signal<Athlete | null>(null);
+  readonly templates = signal<SessionTemplate[]>([]);
   draft = '';
   myId = '';
   readonly isCoach = false as boolean;
@@ -192,8 +215,22 @@ export class MessagesPage implements OnInit, OnDestroy, AfterViewChecked {
       this.realtime.onRead((r) => this.onRead(r)),
     );
     await this.loadConversations();
+    if (this.isCoach) {
+      this.templates.set(await this.api.get<SessionTemplate[]>('/templates').catch(() => []));
+    }
     const first = this.conversations()?.[0];
     if (first && !this.isCoach) await this.select(first);
+  }
+
+  async shareTemplate(templateId: string): Promise<void> {
+    const id = this.selectedId();
+    const template = this.templates().find((t) => t.id === templateId);
+    if (!id || !template) return;
+    await this.api.post<Message>(`/conversations/${id}/messages`, {
+      type: 'template_card',
+      text: template.name,
+      ref: { templateId: template.id },
+    });
   }
 
   ngOnDestroy(): void {

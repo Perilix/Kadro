@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type {
   AthleteListItem,
   Exercise,
@@ -8,6 +8,7 @@ import type {
   ResolvedPreview,
   RunBlock,
   RunStep,
+  SessionTemplate,
   SessionTemplateCreate,
   StrengthItem,
 } from '@kadro/shared';
@@ -63,12 +64,14 @@ const KIND_LABELS: [StepDraft['kind'], string][] = [
     <div class="row crumb faint">
       <a routerLink="/bibliotheque" class="crumb-link">Bibliothèque</a>
       <ui-icon name="chevron" [size]="14" />
-      <span class="crumb-here">Nouvelle séance</span>
+      <span class="crumb-here">{{ editId() ? name || 'Modifier le modèle' : 'Nouvelle séance' }}</span>
     </div>
     <header class="row head">
-      <h1 class="grow">Nouvelle séance</h1>
+      <h1 class="grow">{{ editId() ? 'Modifier le modèle' : 'Nouvelle séance' }}</h1>
       <a class="btn" routerLink="/bibliotheque">Annuler</a>
-      <button class="btn" type="button" [disabled]="busy()" (click)="saveTemplate()"><ui-icon name="library" [size]="18" />Enregistrer comme modèle</button>
+      <button class="btn" type="button" [disabled]="busy()" (click)="saveTemplate()">
+        <ui-icon name="library" [size]="18" />{{ editId() ? 'Enregistrer les modifications' : 'Enregistrer comme modèle' }}
+      </button>
       <button class="btn primary" type="button" [disabled]="busy() || !canAssign()" (click)="assign()"><ui-icon name="check" [size]="18" [sw]="2" />Assigner</button>
     </header>
     @if (error()) {
@@ -345,6 +348,8 @@ const KIND_LABELS: [StepDraft['kind'], string][] = [
 export class TemplateEditorPage implements OnInit {
   private readonly api = inject(ApiClient);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  readonly editId = signal<string | null>(null);
 
   readonly kinds = KIND_LABELS;
   readonly scale10 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -376,6 +381,72 @@ export class TemplateEditorPage implements OnInit {
     ]);
     this.catalog.set(catalog);
     this.roster.set(roster.items);
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.editId.set(id);
+      const template = await this.api.get<SessionTemplate>(`/templates/${id}`);
+      this.prefill(template);
+    }
+  }
+
+  private prefill(template: SessionTemplate): void {
+    this.type = template.type;
+    this.category = template.category;
+    this.expectedDifficulty = template.expectedDifficulty;
+    this.name = template.name;
+    this.instructions = template.instructions ?? '';
+    if (template.type === 'run' && template.blocks) {
+      this.blocks = template.blocks.map((block) => {
+        if (block.kind === 'repeat') {
+          return { repeat: true, count: block.count, steps: block.children.map((s) => this.toDraft(s)) };
+        }
+        return { repeat: false, count: 10, steps: [this.toDraft(block)] };
+      });
+    }
+    if (template.type === 'strength' && template.exercises) {
+      this.exercisesDraft = template.exercises.map((e) => ({
+        exerciseId: e.exerciseId,
+        sets: e.sets,
+        mode: e.reps != null ? 'reps' : 'duration',
+        reps: e.reps ?? 10,
+        durationSec: e.durationSec ?? 45,
+        loadType: e.load.type === 'pctRm' ? 'pctRm' : e.load.type === 'absolute' ? 'absolute' : 'bodyweight',
+        pct: e.load.type === 'pctRm' ? e.load.pct : 70,
+        kg: e.load.type === 'absolute' ? e.load.kg : 40,
+        restSec: e.restSec,
+      }));
+    }
+  }
+
+  private toDraft(step: RunStep): StepDraft {
+    const draft = this.newStep(step.kind);
+    draft.mode = step.distanceM != null ? 'distance' : 'duration';
+    if (step.durationSec != null) draft.durationMin = Math.round(step.durationSec / 60);
+    if (step.distanceM != null) draft.distanceM = step.distanceM;
+    draft.note = step.note ?? '';
+    switch (step.target.type) {
+      case 'vmaPct':
+        draft.targetType = 'vmaPct';
+        draft.minPct = step.target.minPct;
+        draft.maxPct = step.target.maxPct;
+        break;
+      case 'zone':
+        draft.targetType = 'zone';
+        draft.zone = step.target.zone;
+        break;
+      case 'pace':
+        draft.targetType = 'pace';
+        draft.minPace = fmtPaceInput(step.target.minSecPerKm);
+        draft.maxPace = fmtPaceInput(step.target.maxSecPerKm);
+        break;
+      case 'racePace':
+        draft.targetType = 'racePace';
+        draft.race = step.target.race;
+        break;
+      default:
+        draft.targetType = 'free';
+    }
+    return draft;
   }
 
   canAssign(): boolean {
@@ -460,7 +531,13 @@ export class TemplateEditorPage implements OnInit {
     if (!dto) return;
     this.busy.set(true);
     try {
-      await this.api.post('/templates', dto);
+      const editId = this.editId();
+      if (editId) {
+        const { type, ...update } = dto;
+        await this.api.patch(`/templates/${editId}`, update);
+      } else {
+        await this.api.post('/templates', dto);
+      }
       await this.router.navigate(['/bibliotheque']);
     } catch {
       this.error.set('Enregistrement impossible. Réessayez.');
@@ -606,4 +683,9 @@ function parsePace(value: string): number | null {
   const match = /^(\d{1,2}):([0-5]\d)$/.exec(value.trim());
   if (!match) return null;
   return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function fmtPaceInput(secPerKm: number): string {
+  const s = Math.round(secPerKm);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }

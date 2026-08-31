@@ -8,6 +8,7 @@ import type {
   AthleteOverview,
   Checkin,
   ExerciseStats,
+  Group,
   Monitoring,
   Note,
   PaceTable,
@@ -178,6 +179,21 @@ interface WeekDay {
                   <div class="g-name">{{ goal.label }}</div>
                   <div class="muted g-meta">
                     {{ goal.date ? frDateLong(goal.date) : '' }}{{ goal.targetTime ? ' · objectif ' + goal.targetTime : '' }}{{ goal.referenceTime ? ' · réf. ' + goal.referenceTime : '' }}
+                  </div>
+                </section>
+              }
+              @if (groups().length > 0) {
+                <section class="card pad">
+                  <div class="row card-head"><h2>Groupes</h2></div>
+                  <div class="row g-chips">
+                    @for (g of groups(); track g.id) {
+                      <button
+                        class="g-chip"
+                        type="button"
+                        [class.on]="inGroup(g.id)"
+                        (click)="toggleGroup(g.id)"
+                      >{{ g.name }}</button>
+                    }
                   </div>
                 </section>
               }
@@ -392,6 +408,9 @@ interface WeekDay {
     .str-rm { gap: 2px; align-items: flex-end; }
     .lv { gap: 6px; font-size: 13px; }
     .strong { font-weight: 600; }
+    .g-chips { gap: 8px; flex-wrap: wrap; }
+    .g-chip { height: 32px; padding: 0 12px; border-radius: 999px; font-family: inherit; font-size: 13px; font-weight: 500; background: var(--surface); color: var(--ink2); border: 1px solid var(--line-strong); cursor: pointer; }
+    .g-chip.on { background: var(--btn-primary-bg); color: var(--btn-primary-ink); border-color: var(--btn-primary-bg); }
   `,
 })
 export class AthleteDetailPage implements OnInit {
@@ -408,6 +427,7 @@ export class AthleteDetailPage implements OnInit {
   readonly tests = signal<Test[]>([]);
   readonly activities = signal<ActivityListItem[]>([]);
   readonly strength = signal<ExerciseStats[]>([]);
+  readonly groups = signal<Group[]>([]);
   noteDraft = '';
   vmaDraft: number | null = null;
   private athleteId = '';
@@ -460,7 +480,7 @@ export class AthleteDetailPage implements OnInit {
   async ngOnInit(): Promise<void> {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
     this.athleteId = id;
-    const [athlete, overview, monitoring, paces, notes, tests, activities, strength] = await Promise.all([
+    const [athlete, overview, monitoring, paces, notes, tests, activities, strength, groups] = await Promise.all([
       this.api.get<Athlete>(`/athletes/${id}`),
       this.api.get<AthleteOverview>(`/athletes/${id}/overview`),
       this.api.get<Monitoring>(`/athletes/${id}/monitoring?weeks=4`),
@@ -469,7 +489,9 @@ export class AthleteDetailPage implements OnInit {
       this.api.get<Test[]>(`/athletes/${id}/tests`),
       this.api.get<Page<ActivityListItem>>(`/activities?athleteId=${id}&limit=50`),
       this.api.get<ExerciseStats[]>(`/athletes/${id}/strength-stats`),
+      this.api.get<Group[]>('/groups'),
     ]);
+    this.groups.set(groups);
     this.athlete.set(athlete);
     this.overview.set(overview);
     this.monitoring.set(monitoring);
@@ -574,6 +596,17 @@ export class AthleteDetailPage implements OnInit {
 
   shortDate(iso: string): string {
     return new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric' }).format(new Date(iso));
+  }
+
+  inGroup(groupId: string): boolean {
+    return this.athlete()?.groupIds.includes(groupId) ?? false;
+  }
+
+  async toggleGroup(groupId: string): Promise<void> {
+    const current = this.athlete()?.groupIds ?? [];
+    const next = current.includes(groupId) ? current.filter((g) => g !== groupId) : [...current, groupId];
+    const updated = await this.api.patch<Athlete>(`/athletes/${this.athleteId}`, { groupIds: next });
+    this.athlete.set(updated);
   }
 
   async addNote(): Promise<void> {

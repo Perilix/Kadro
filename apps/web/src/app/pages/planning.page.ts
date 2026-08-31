@@ -1,7 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import type { AthleteListItem, Page, PlannedSession, SessionTemplate } from '@kadro/shared';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import type { AthleteListItem, Page, PlannedSession, PlannedSessionDetail, SessionTemplate } from '@kadro/shared';
+import { formatPace } from '@kadro/shared';
 import { ApiClient } from '../core/api-client';
 import { AvatarComponent } from '../ui/avatar.component';
 import { IconComponent } from '../ui/icon.component';
@@ -71,6 +72,54 @@ function addDays(date: Date, days: number): Date {
       </section>
     }
 
+    @if (selected(); as sel) {
+      <section class="card sel-panel">
+        <div class="row sel-head">
+          <div class="grow">
+            <div class="row sel-title">
+              <h2>{{ sel.name }}</h2>
+              <span class="pill soft">difficulté {{ sel.expectedDifficulty }}/10</span>
+            </div>
+            <div class="muted sel-sub">
+              {{ athleteName(sel.athleteId) }} · {{ sel.date }}
+              @if (sel.modification) {
+                · modifiée depuis « {{ sel.modification.fromName }} »
+              }
+            </div>
+          </div>
+          <button class="icon-btn close" type="button" (click)="selected.set(null)"><ui-icon name="x" [size]="16" /></button>
+        </div>
+        @if (sel.instructions) {
+          <p class="muted sel-note">« {{ sel.instructions }} »</p>
+        }
+        <div class="row sel-body">
+          <div class="grow sel-paces">
+            @for (p of sel.resolved?.paces ?? []; track p.blockPath) {
+              <div class="row sel-row"><span class="muted">Bloc {{ p.blockPath }}</span><span class="num strong">{{ pace(p.minSecPerKm) }} – {{ pace(p.maxSecPerKm) }}</span></div>
+            }
+            @for (l of sel.resolved?.loads ?? []; track l.exerciseId) {
+              <div class="row sel-row"><span class="muted">Charge de travail</span><span class="num strong">{{ l.kg }} kg</span></div>
+            }
+            @if (sel.resolved?.estLoadUa != null) {
+              <div class="row sel-row"><span class="muted">Charge estimée</span><span class="num strong">{{ sel.resolved?.estLoadUa }} UA</span></div>
+            }
+          </div>
+          <div class="col sel-actions">
+            <div class="col field">
+              <span class="label">Déplacer au</span>
+              <div class="row move-row">
+                <input class="input date-in" type="date" [(ngModel)]="moveDate" />
+                <button class="btn small" type="button" [disabled]="moveDate === sel.date || busy()" (click)="moveSession(sel)">Déplacer</button>
+              </div>
+            </div>
+            <button class="btn small danger" type="button" (click)="removeSelected(sel, 'one')">Supprimer cette séance</button>
+            @if (sel.assignmentId) {
+              <button class="btn small danger" type="button" (click)="removeSelected(sel, 'assignment')">Supprimer pour tous les athlètes</button>
+            }
+          </div>
+        </div>
+      </section>
+    }
     <section class="card grid-card">
       <div class="matrix head-row">
         <div class="corner"></div>
@@ -95,7 +144,7 @@ function addDays(date: Date, days: number): Date {
           @for (day of days(); track day.date) {
             <div class="cell" [class.today-col]="day.today">
               @for (s of cellSessions(a.id, day.date); track s.id) {
-                <div class="chip row" [class]="'chip row st-' + chipState(s, day)">
+                <div class="chip row" [class]="'chip row st-' + chipState(s, day)" (click)="openSession(s)">
                   @if (s.status === 'completed') {
                     <ui-icon name="check" [size]="13" [sw]="2.25" style="color: var(--good)" />
                   } @else if (s.status === 'missed') {
@@ -164,6 +213,24 @@ function addDays(date: Date, days: number): Date {
     .sw.st-planned { border-style: dashed; border-color: var(--line-strong); }
     .sw.st-missed { background: var(--bad-soft); border-color: var(--bad-soft); }
     .empty { padding: 16px; margin: 0; font-size: 13px; }
+    .chip { cursor: pointer; }
+    .sel-panel { padding: 16px 18px; }
+    .sel-head { gap: 12px; align-items: flex-start; }
+    .grow { flex: 1 1 auto; min-width: 0; }
+    .sel-title { gap: 10px; }
+    .sel-title h2 { margin: 0; }
+    .sel-sub { font-size: 13px; margin-top: 4px; }
+    .close { width: 32px; height: 32px; border: none; background: transparent; }
+    .sel-note { font-size: 13px; margin: 10px 0 0; }
+    .sel-body { gap: 24px; align-items: flex-start; margin-top: 12px; }
+    .sel-paces { font-size: 13.5px; }
+    .sel-row { justify-content: space-between; padding: 7px 0; border-top: 1px solid var(--line); }
+    .strong { font-weight: 600; }
+    .sel-actions { gap: 8px; width: 280px; flex: 0 0 auto; }
+    .field { gap: 6px; }
+    .move-row { gap: 8px; }
+    .date-in { max-width: 160px; }
+    .btn.danger { color: var(--bad); border-color: var(--bad-soft); }
   `,
 })
 export class PlanningPage implements OnInit {
@@ -177,8 +244,10 @@ export class PlanningPage implements OnInit {
   readonly assignAthletes = signal(new Set<string>());
   readonly assignError = signal<string | null>(null);
   readonly busy = signal(false);
+  readonly selected = signal<PlannedSessionDetail | null>(null);
   assignTemplateId = '';
   assignDate = ymd(new Date());
+  moveDate = ymd(new Date());
 
   readonly days = computed(() => {
     const start = this.weekStart();
@@ -194,6 +263,8 @@ export class PlanningPage implements OnInit {
     new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(this.weekStart()),
   );
 
+  private readonly route = inject(ActivatedRoute);
+
   async ngOnInit(): Promise<void> {
     const [roster, templates] = await Promise.all([
       this.api.get<Page<AthleteListItem>>('/athletes?limit=100&sort=name'),
@@ -201,6 +272,11 @@ export class PlanningPage implements OnInit {
     ]);
     this.roster.set(roster.items);
     this.templates.set(templates);
+    const preselect = this.route.snapshot.queryParamMap.get('template');
+    if (preselect && templates.some((t) => t.id === preselect)) {
+      this.assignTemplateId = preselect;
+      this.assignOpen.set(true);
+    }
     await this.loadWeek();
   }
 
@@ -259,6 +335,38 @@ export class PlanningPage implements OnInit {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  athleteName(id: string): string {
+    const a = this.roster().find((x) => x.id === id);
+    return a ? `${a.firstName} ${a.lastName}` : '';
+  }
+
+  pace(secPerKm: number): string {
+    return formatPace(secPerKm);
+  }
+
+  async openSession(session: PlannedSession): Promise<void> {
+    const detail = await this.api.get<PlannedSessionDetail>(`/sessions/${session.id}`);
+    this.moveDate = detail.date;
+    this.selected.set(detail);
+  }
+
+  async moveSession(sel: PlannedSessionDetail): Promise<void> {
+    this.busy.set(true);
+    try {
+      await this.api.patch(`/sessions/${sel.id}`, { date: this.moveDate });
+      this.selected.set(null);
+      await this.loadWeek();
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async removeSelected(sel: PlannedSessionDetail, scope: 'one' | 'assignment'): Promise<void> {
+    await this.api.delete(`/sessions/${sel.id}?scope=${scope}`);
+    this.selected.set(null);
+    await this.loadWeek();
   }
 
   async remove(session: PlannedSession): Promise<void> {
