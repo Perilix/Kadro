@@ -118,7 +118,7 @@ import { AvatarComponent } from '../ui/avatar.component';
     .who-sub { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .out { width: 30px; height: 30px; border: none; background: transparent; }
     .out:hover { color: var(--bad); }
-    .content { padding: 28px 32px; min-width: 0; display: flex; flex-direction: column; gap: 22px; }
+    .content { padding: 28px 32px; min-width: 0; display: flex; flex-direction: column; }
     .bell-wrap { position: fixed; top: 24px; right: 32px; z-index: 50; }
     .bell { position: relative; }
     .bell-badge { position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 10.5px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }

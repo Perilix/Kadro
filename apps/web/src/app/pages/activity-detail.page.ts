@@ -166,18 +166,18 @@ const SPORT_LABELS: Record<string, string> = {
     }
   `,
   styles: `
-    .back { background: none; border: none; font-family: inherit; font-size: 13px; cursor: pointer; margin-bottom: 12px; padding: 0; }
+    .back { background: none; border: none; font-family: inherit; font-size: 13px; cursor: pointer; padding: 0; align-self: flex-start; color: var(--ink2); }
     .head { display: flex; align-items: center; gap: 12px; }
     .head h1 { margin: 0; }
-    .sub { margin: 6px 0 20px; text-transform: capitalize; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; margin-top: 4px; }
+    .sub { margin: 6px 0 0; text-transform: capitalize; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
     .grid section { margin: 0; }
     .rows { display: grid; gap: 10px; }
     .row { display: flex; justify-content: space-between; align-items: baseline; font-variant-numeric: tabular-nums; }
     .vs { font-weight: 400; font-size: 12px; }
     .row .status { margin-left: 8px; font-size: 12px; }
     .comment { margin: 10px 0 0; font-size: 13px; line-height: 1.5; }
-    section.card { margin-top: 16px; }
+    
     .exo { padding: 10px 0; border-bottom: 1px solid var(--line); }
     .exo:last-of-type { border-bottom: none; }
     .exo-head { display: flex; gap: 12px; align-items: baseline; margin-bottom: 6px; }

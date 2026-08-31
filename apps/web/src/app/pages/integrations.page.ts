@@ -78,8 +78,8 @@ const PROVIDER_LABELS: Record<string, string> = {
   `,
   styles: `
     .value.alert { color: var(--bad); }
-    section { margin-top: 4px; }
-    .issues { margin-top: 16px; }
+    
+    
     .issue { display: flex; gap: 16px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
     .issue:last-child { border-bottom: none; }
     .table tbody tr { cursor: default; }

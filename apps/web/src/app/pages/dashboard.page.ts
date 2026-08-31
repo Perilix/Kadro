@@ -246,7 +246,7 @@ const ROSTER_COLS = '1.5fr 1fr 0.95fr 1.15fr 1.15fr';
     .vol-head h2 { flex: 1 1 auto; }
     .vol-total { font-size: 28px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; }
     .vol-cap { font-size: 13px; font-weight: 500; letter-spacing: 0; }
-    .ob { margin-bottom: 0; }
+    
     .ob-step { gap: 14px; padding: 12px 16px; border-top: 1px solid var(--line); color: var(--ink); }
     .ob-step:hover { background: var(--surface2); }
     .ob-n { width: 24px; height: 24px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; background: var(--neutral-soft); color: var(--ink2); flex: 0 0 auto; }

@@ -79,7 +79,7 @@ import { IconComponent } from '../ui/icon.component';
     .who-sub { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .out { width: 30px; height: 30px; border: none; background: transparent; }
     .out:hover { color: var(--bad); }
-    .content { padding: 28px 32px; min-width: 0; display: flex; flex-direction: column; gap: 22px; }
+    .content { padding: 28px 32px; min-width: 0; display: flex; flex-direction: column; }
   `,
 })
 export class AthleteShellPage implements OnInit {
