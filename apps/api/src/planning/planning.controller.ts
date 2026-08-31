@@ -36,11 +36,12 @@ import { teamIdOf } from '../groups/groups.controller';
 import { PlanningService } from './planning.service';
 
 @Controller('sessions')
-@UseGuards(JwtAccessGuard, CoachGuard)
+@UseGuards(JwtAccessGuard)
 export class PlanningController {
   constructor(private readonly planning: PlanningService) {}
 
   @Post('assign')
+  @UseGuards(CoachGuard)
   assign(
     @CurrentUser() user: JwtPayload,
     @Body(new ZodValidationPipe(zAssign)) dto: Assign,
@@ -49,6 +50,7 @@ export class PlanningController {
   }
 
   @Post('preview')
+  @UseGuards(CoachGuard)
   preview(
     @CurrentUser() user: JwtPayload,
     @Body(new ZodValidationPipe(zPreviewRequest)) dto: PreviewRequest,
@@ -61,15 +63,16 @@ export class PlanningController {
     @CurrentUser() user: JwtPayload,
     @Query(new ZodValidationPipe(zSessionsQuery)) query: SessionsQuery,
   ): Promise<PlannedSession[]> {
-    return this.planning.list(teamIdOf(user), query);
+    return this.planning.list(teamIdOf(user), query, ownAthleteId(user));
   }
 
   @Get(':id')
   get(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<PlannedSessionDetail> {
-    return this.planning.getDetail(teamIdOf(user), parseObjectId(id));
+    return this.planning.getDetail(teamIdOf(user), parseObjectId(id), ownAthleteId(user));
   }
 
   @Patch(':id')
+  @UseGuards(CoachGuard)
   update(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
@@ -79,6 +82,7 @@ export class PlanningController {
   }
 
   @Delete(':id')
+  @UseGuards(CoachGuard)
   @HttpCode(204)
   async remove(
     @CurrentUser() user: JwtPayload,
@@ -87,4 +91,8 @@ export class PlanningController {
   ): Promise<void> {
     await this.planning.remove(teamIdOf(user), parseObjectId(id), query.scope);
   }
+}
+
+function ownAthleteId(user: JwtPayload): Types.ObjectId | null {
+  return user.role === 'athlete' && user.athleteId ? new Types.ObjectId(user.athleteId) : null;
 }

@@ -112,12 +112,17 @@ export class PlanningService {
     };
   }
 
-  async list(teamId: Types.ObjectId, query: SessionsQuery): Promise<PlannedSessionDto[]> {
+  async list(
+    teamId: Types.ObjectId,
+    query: SessionsQuery,
+    restrictToAthleteId: Types.ObjectId | null = null,
+  ): Promise<PlannedSessionDto[]> {
     const filter: FilterQuery<PlannedSession> = {
       teamId,
       date: { $gte: query.from, $lte: query.to },
     };
-    if (query.athleteId) filter.athleteId = new Types.ObjectId(query.athleteId);
+    if (restrictToAthleteId) filter.athleteId = restrictToAthleteId;
+    else if (query.athleteId) filter.athleteId = new Types.ObjectId(query.athleteId);
     else if (query.groupId) {
       const members = await this.athletes
         .find({ teamId, groupIds: new Types.ObjectId(query.groupId) }, { _id: 1 })
@@ -128,8 +133,16 @@ export class PlanningService {
     return docs.map(toSessionDto);
   }
 
-  async getDetail(teamId: Types.ObjectId, id: Types.ObjectId): Promise<PlannedSessionDetail> {
-    return toDetailDto(await this.get(teamId, id));
+  async getDetail(
+    teamId: Types.ObjectId,
+    id: Types.ObjectId,
+    restrictToAthleteId: Types.ObjectId | null = null,
+  ): Promise<PlannedSessionDetail> {
+    const doc = await this.get(teamId, id);
+    if (restrictToAthleteId && !doc.athleteId.equals(restrictToAthleteId)) {
+      throw new NotFoundException({ code: 'session.not_found' });
+    }
+    return toDetailDto(doc);
   }
 
   async update(

@@ -9,6 +9,7 @@
     "build": "pnpm --filter @kadro/tokens build && pnpm --filter @kadro/shared build && pnpm --filter @kadro/api build && pnpm --filter @kadro/web build",
     "dev:api": "pnpm --filter @kadro/api start:dev",
     "dev:web": "pnpm --filter @kadro/web start",
+    "dev:mobile": "pnpm --filter @kadro/mobile start",
     "test": "pnpm -r test"
   }
 }
