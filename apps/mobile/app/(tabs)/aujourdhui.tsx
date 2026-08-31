@@ -5,15 +5,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ActivityDetail, CheckinToday, PlannedSession, PlannedSessionDetail } from '@kadro/shared';
 import { formatPace } from '@kadro/shared';
 import { api } from '../../lib/api';
+import { useAuth } from '../../lib/auth';
 import { radius, useTheme } from '../../lib/theme';
 import { Button, Card, Input, StatusDot } from '../../lib/ui';
 
 const FEELINGS: [number, string][] = [
   [1, 'Épuisé·e'],
   [2, 'Fatigué·e'],
-  [3, 'Moyen'],
+  [3, 'Correct'],
   [4, 'Bien'],
   [5, 'Au top'],
+];
+
+const EFFORTS: [number, string][] = [
+  [1, 'Très facile'],
+  [2, 'Facile'],
+  [3, 'Correct'],
+  [4, 'Dur'],
+  [5, 'Très dur'],
 ];
 
 const LEVEL_LABELS: Record<string, string> = { good: 'En forme', warn: 'À surveiller', bad: 'Signal rouge' };
@@ -25,6 +34,7 @@ function todayYmd(): string {
 export default function AujourdhuiScreen() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const [checkin, setCheckin] = useState<CheckinToday | null>(null);
   const [session, setSession] = useState<PlannedSessionDetail | null>(null);
   const [activity, setActivity] = useState<ActivityDetail | null>(null);
@@ -116,10 +126,18 @@ export default function AujourdhuiScreen() {
         />
       }
     >
-      <Text style={{ color: t.ink, fontSize: 24, fontWeight: '700', textTransform: 'capitalize' }}>{dateLabel}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: t.ink3, fontSize: 13, textTransform: 'capitalize' }}>{dateLabel}</Text>
+          <Text style={{ color: t.ink, fontSize: 28, fontWeight: '600', letterSpacing: -0.5, marginTop: 2 }}>
+            Bonjour {user?.firstName}
+          </Text>
+        </View>
+      </View>
 
       <Card>
-        <Text style={{ color: t.ink, fontSize: 15, fontWeight: '600', marginBottom: 10 }}>Comment ça va ce matin ?</Text>
+        <Text style={{ color: t.ink, fontSize: 15, fontWeight: '600' }}>Comment tu te sens ce matin ?</Text>
+        <Text style={{ color: t.ink2, fontSize: 13, marginTop: 2, marginBottom: 12 }}>Ton coach le voit avant ta séance.</Text>
         {checkin?.checkin ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <StatusDot level={checkin.checkin.level} label={LEVEL_LABELS[checkin.checkin.level] ?? ''} />
@@ -133,16 +151,16 @@ export default function AujourdhuiScreen() {
                 onPress={() => void submitCheckin(value)}
                 style={({ pressed }) => ({
                   flex: 1,
+                  height: 44,
                   alignItems: 'center',
-                  paddingVertical: 10,
+                  justifyContent: 'center',
                   borderRadius: radius.control,
                   borderWidth: 1,
-                  borderColor: t.lineStrong,
+                  borderColor: t.line,
                   backgroundColor: pressed ? t.neutralSoft : t.surface,
                 })}
               >
-                <Text style={{ color: t.ink, fontSize: 16, fontWeight: '700' }}>{value}</Text>
-                <Text style={{ color: t.ink2, fontSize: 10, marginTop: 2 }}>{label}</Text>
+                <Text style={{ color: t.ink2, fontSize: 11, fontWeight: '500', textAlign: 'center' }}>{label}</Text>
               </Pressable>
             ))}
           </View>
@@ -218,7 +236,7 @@ export default function AujourdhuiScreen() {
                   </View>
                   <Text style={{ color: t.ink, fontSize: 14, fontWeight: '600' }}>Sensations</Text>
                   <View style={{ flexDirection: 'row', gap: 6 }}>
-                    {FEELINGS.map(([value, label]) => (
+                    {EFFORTS.map(([value, label]) => (
                       <Pressable
                         key={value}
                         onPress={() => setFeeling(value)}

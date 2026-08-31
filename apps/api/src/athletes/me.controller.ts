@@ -1,6 +1,6 @@
 import { Controller, Get, NotFoundException, Query, UseGuards } from '@nestjs/common';
 import { Types } from 'mongoose';
-import type { AthleteOverview, ExerciseStats, Monitoring, PaceTable } from '@kadro/shared';
+import type { Athlete, AthleteOverview, ExerciseStats, Monitoring, PaceTable } from '@kadro/shared';
 import { z } from 'zod';
 import { ActivitiesService } from '../activities/activities.service';
 import { AlertsService } from '../alerts/alerts.service';
@@ -25,6 +25,11 @@ export class MeController {
     private readonly checkins: CheckinsService,
     private readonly alerts: AlertsService,
   ) {}
+
+  @Get('profile')
+  async profile(@CurrentUser() user: JwtPayload): Promise<Athlete> {
+    return this.athletes.toDto(await this.requireAthlete(user));
+  }
 
   @Get('overview')
   async overview(

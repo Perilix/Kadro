@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import type { AuthSession, Login, Me, RegisterCoach, TeamSummary, User } from '@kadro/shared';
+import type { AthleteSummary, AuthSession, Login, Me, RegisterCoach, TeamSummary, User } from '@kadro/shared';
 import { ApiClient } from './api-client';
 
 @Injectable({ providedIn: 'root' })
@@ -9,6 +9,7 @@ export class AuthStore {
 
   readonly user = signal<User | null>(null);
   readonly team = signal<TeamSummary | null>(null);
+  readonly athlete = signal<AthleteSummary | null>(null);
 
   async ensureLoaded(): Promise<boolean> {
     if (this.loaded) return this.user() != null;
@@ -18,6 +19,7 @@ export class AuthStore {
       const me = await this.api.get<Me>('/auth/me');
       this.user.set(me.user);
       this.team.set(me.team);
+      this.athlete.set(me.athlete);
       return true;
     } catch {
       this.api.clearTokens();
@@ -40,6 +42,7 @@ export class AuthStore {
     this.api.clearTokens();
     this.user.set(null);
     this.team.set(null);
+    this.athlete.set(null);
     this.loaded = false;
   }
 
@@ -48,6 +51,7 @@ export class AuthStore {
     const me = await this.api.get<Me>('/auth/me');
     this.user.set(me.user);
     this.team.set(me.team);
+    this.athlete.set(me.athlete);
     this.loaded = true;
   }
 }

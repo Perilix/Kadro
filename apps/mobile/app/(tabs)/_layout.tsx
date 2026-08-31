@@ -6,7 +6,7 @@ import { useTheme } from '../../lib/theme';
 function TabLabel({ label, focused }: { label: string; focused: boolean }) {
   const t = useTheme();
   return (
-    <Text style={{ fontSize: 11, fontWeight: focused ? '700' : '500', color: focused ? t.ink : t.ink3 }}>
+    <Text style={{ fontSize: 10.5, fontWeight: focused ? '700' : '500', color: focused ? t.ink : t.ink3 }}>
       {label}
     </Text>
   );
@@ -35,8 +35,12 @@ export default function TabsLayout() {
         options={{ tabBarLabel: ({ focused }) => <TabLabel label="Planning" focused={focused} /> }}
       />
       <Tabs.Screen
+        name="progression"
+        options={{ tabBarLabel: ({ focused }) => <TabLabel label="Progression" focused={focused} /> }}
+      />
+      <Tabs.Screen
         name="messages"
-        options={{ tabBarLabel: ({ focused }) => <TabLabel label="Messages" focused={focused} /> }}
+        options={{ tabBarLabel: ({ focused }) => <TabLabel label="Coach" focused={focused} /> }}
       />
       <Tabs.Screen
         name="profil"

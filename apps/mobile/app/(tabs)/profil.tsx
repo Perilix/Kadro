@@ -2,7 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Linking, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { AuthorizeUrl, Connection } from '@kadro/shared';
+import type { Athlete, AuthorizeUrl, Connection } from '@kadro/shared';
 import { ApiError, api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useTheme } from '../../lib/theme';
@@ -25,10 +25,16 @@ export default function ProfilScreen() {
   const insets = useSafeAreaInsets();
   const { user, athlete, logout } = useAuth();
   const [connections, setConnections] = useState<Connection[]>([]);
+  const [me, setMe] = useState<Athlete | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setConnections(await api.get<Connection[]>('/me/connections').catch(() => []));
+    const [conns, profile] = await Promise.all([
+      api.get<Connection[]>('/me/connections').catch(() => []),
+      api.get<Athlete>('/me/profile').catch(() => null),
+    ]);
+    setConnections(conns);
+    setMe(profile);
   }, []);
 
   useFocusEffect(
@@ -65,9 +71,36 @@ export default function ProfilScreen() {
         </Text>
         <Text style={{ color: t.ink2, fontSize: 13, marginTop: 4 }}>{user?.email}</Text>
         {athlete ? (
-          <Text style={{ color: t.ink2, fontSize: 13, marginTop: 8 }}>Coach : {athlete.coachName}</Text>
+          <Text style={{ color: t.ink2, fontSize: 13, marginTop: 8 }}>Coaché·e par {athlete.coachName}</Text>
         ) : null}
       </Card>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ flex: 1, padding: 12, borderRadius: 10, backgroundColor: t.surface2 }}>
+          <Text style={{ color: t.ink3, fontSize: 11.5 }}>VMA</Text>
+          <Text style={{ color: t.ink, fontSize: 16, fontWeight: '600' }}>
+            {me?.profile.vmaKmh != null ? String(me.profile.vmaKmh).replace('.', ',') + ' km/h' : '—'}
+          </Text>
+        </View>
+        <View style={{ flex: 1, padding: 12, borderRadius: 10, backgroundColor: t.surface2 }}>
+          <Text style={{ color: t.ink3, fontSize: 11.5 }}>FC max</Text>
+          <Text style={{ color: t.ink, fontSize: 16, fontWeight: '600' }}>{me?.profile.hrMaxBpm ?? '—'}</Text>
+        </View>
+        <View style={{ flex: 1, padding: 12, borderRadius: 10, backgroundColor: t.surface2 }}>
+          <Text style={{ color: t.ink3, fontSize: 11.5 }}>Poids</Text>
+          <Text style={{ color: t.ink, fontSize: 16, fontWeight: '600' }}>
+            {me?.profile.weightKg != null ? me.profile.weightKg + ' kg' : '—'}
+          </Text>
+        </View>
+      </View>
+      {me?.goal ? (
+        <Card>
+          <Text style={{ color: t.ink3, fontSize: 12, fontWeight: '500', marginBottom: 6 }}>Objectif</Text>
+          <Text style={{ color: t.ink, fontSize: 15, fontWeight: '600' }}>{me.goal.label}</Text>
+          <Text style={{ color: t.ink2, fontSize: 13, marginTop: 2 }}>
+            {me.goal.date ?? ''}{me.goal.targetTime ? ' · objectif ' + me.goal.targetTime : ''}
+          </Text>
+        </Card>
+      ) : null}
       <Card>
         <Text style={{ color: t.ink, fontSize: 15, fontWeight: '600', marginBottom: 10 }}>
           Montres & connexions

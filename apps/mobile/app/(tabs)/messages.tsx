@@ -58,9 +58,14 @@ export default function MessagesScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={{ flex: 1, paddingTop: insets.top + 12 }}>
-        <Text style={{ color: t.ink, fontSize: 24, fontWeight: '700', paddingHorizontal: 16 }}>
-          {conversation ? conversation.name : 'Messages'}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: t.ink, fontSize: 22, fontWeight: '600', letterSpacing: -0.4 }}>
+              {conversation ? conversation.name : 'Mon coach'}
+            </Text>
+            <Text style={{ color: t.ink3, fontSize: 12 }}>Ton coach</Text>
+          </View>
+        </View>
         <FlatList
           ref={listRef}
           data={messages}
