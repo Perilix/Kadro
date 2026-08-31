@@ -6,6 +6,8 @@ export * from './dto/athlete';
 export * from './dto/exercise';
 export * from './dto/session';
 export * from './dto/planning';
+export * from './dto/checkin';
+export * from './dto/alert';
 export * from './rules/pace';
 export * from './rules/strength';
 export * from './rules/load';

@@ -12,6 +12,7 @@ import type {
   Page,
 } from '@kadro/shared';
 import { hrZonesFromMax, paceTable } from '@kadro/shared';
+import { decodeCursor, encodeCursor, escapeRegex } from '../common/cursor';
 import { Group } from '../groups/group.schema';
 import type { TeamDocument } from '../teams/team.schema';
 import type { UserDocument } from '../users/user.schema';
@@ -269,18 +270,4 @@ function toAthleteDto(doc: AthleteDocument, user: UserDocument): AthleteDto {
     },
     joinedAt: (doc as unknown as { joinedAt: Date }).joinedAt.toISOString(),
   };
-}
-
-function encodeCursor(offset: number): string {
-  return Buffer.from(String(offset), 'utf8').toString('base64url');
-}
-
-function decodeCursor(cursor: string | undefined): number {
-  if (!cursor) return 0;
-  const n = Number(Buffer.from(cursor, 'base64url').toString('utf8'));
-  return Number.isInteger(n) && n > 0 ? n : 0;
-}
-
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

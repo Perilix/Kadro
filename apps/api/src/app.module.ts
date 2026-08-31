@@ -11,6 +11,8 @@ import { AthletesModule } from './athletes/athletes.module';
 import { GroupsModule } from './groups/groups.module';
 import { LibraryModule } from './library/library.module';
 import { PlanningModule } from './planning/planning.module';
+import { AlertsModule } from './alerts/alerts.module';
+import { CheckinsModule } from './checkins/checkins.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { PlanningModule } from './planning/planning.module';
     GroupsModule,
     LibraryModule,
     PlanningModule,
+    AlertsModule,
+    CheckinsModule,
     AuthModule,
     InviteModule,
   ],

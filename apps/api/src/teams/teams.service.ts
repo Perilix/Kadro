@@ -54,6 +54,25 @@ export class TeamsService {
     throw new ConflictException({ code: 'team.invite_code_collision' });
   }
 
+  async updateSettings(
+    teamId: Types.ObjectId,
+    dto: { name?: string; alertDefaults?: Record<string, unknown>; watchPush?: Record<string, unknown> },
+  ): Promise<TeamDocument> {
+    const set: Record<string, unknown> = {};
+    if (dto.name !== undefined) set.name = dto.name;
+    for (const [key, value] of Object.entries(dto.alertDefaults ?? {})) {
+      set[`alertDefaults.${key}`] = value;
+    }
+    for (const [key, value] of Object.entries(dto.watchPush ?? {})) {
+      set[`watchPush.${key}`] = value;
+    }
+    const updated = await this.model
+      .findByIdAndUpdate(teamId, { $set: set }, { new: true })
+      .exec();
+    if (!updated) throw new ConflictException({ code: 'team.not_found' });
+    return updated;
+  }
+
   async rotateInviteCode(teamId: Types.ObjectId): Promise<TeamDocument> {
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
