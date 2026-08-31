@@ -1,0 +1,252 @@
+<title>Kadro face à Nolio et TrueCoach</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
+<style>
+  :root { --bg: #F6F6F3; --surface: #FFFFFF; --surface2: #EFEFEB; --line: #E8E8E3; --ink: #101820; --ink2: #5A6370; --ink3: #8C949D; --accent: #5B4FE9; --accent-soft: #ECEAFD; --accent-ink: #4338CA; --good: #1E9E5A; --good-soft: #E4F5EB; --warn: #D4890A; --warn-soft: #FBF1DC; --bad: #D93B2E; --bad-soft: #FCE7E4; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0E1216; --surface: #161B21; --surface2: #222931; --line: #252C34; --ink: #F2F4F6; --ink2: #A7B0BA; --ink3: #717B86; --accent: #8B82FF; --accent-soft: #26235A; --accent-ink: #B4AEFF; --good: #3DBA76; --good-soft: #12301F; --warn: #E6A23C; --warn-soft: #3A2A0E; --bad: #F0655A; --bad-soft: #3F1A17; } }
+  :root[data-theme="dark"] { --bg: #0E1216; --surface: #161B21; --surface2: #222931; --line: #252C34; --ink: #F2F4F6; --ink2: #A7B0BA; --ink3: #717B86; --accent: #8B82FF; --accent-soft: #26235A; --accent-ink: #B4AEFF; --good: #3DBA76; --good-soft: #12301F; --warn: #E6A23C; --warn-soft: #3A2A0E; --bad: #F0655A; --bad-soft: #3F1A17; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: Geist, "Helvetica Neue", Arial, system-ui, sans-serif; font-size: 15px; line-height: 1.55; font-feature-settings: "tnum" 1; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent-ink); text-decoration: none; } a:hover { text-decoration: underline; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 48px 28px 80px; display: flex; flex-direction: column; gap: 40px; }
+  header .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 14px; }
+  header .brand span.mark { display: inline-flex; width: 26px; height: 26px; border-radius: 7px; background: var(--ink); color: var(--bg); align-items: center; justify-content: center; }
+  h1 { font-size: 34px; line-height: 1.12; letter-spacing: -0.025em; margin: 0 0 10px; text-wrap: balance; }
+  h2 { font-size: 21px; letter-spacing: -0.02em; margin: 0 0 6px; text-wrap: balance; }
+  h3 { font-size: 15px; margin: 0 0 6px; }
+  .lede { color: var(--ink2); font-size: 16.5px; max-width: 70ch; margin: 0; }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  @media (max-width: 760px) { .grid2, .grid3 { grid-template-columns: 1fr; } h1 { font-size: 28px; } }
+  .kpi { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 12px; background: var(--surface2); }
+  .kpi .v { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+  .kpi .l { font-size: 12.5px; color: var(--ink2); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 999px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+  .p-good { background: var(--good-soft); color: var(--good); } .p-warn { background: var(--warn-soft); color: var(--warn); } .p-bad { background: var(--bad-soft); color: var(--bad); } .p-acc { background: var(--accent-soft); color: var(--accent-ink); } .p-mute { background: var(--surface2); color: var(--ink2); }
+  ul { margin: 0; padding-left: 18px; } li { margin: 4px 0; } li::marker { color: var(--ink3); }
+  .two { columns: 2; column-gap: 28px; } @media (max-width: 760px) { .two { columns: 1; } }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 13.5px; }
+  th, td { text-align: left; padding: 10px 14px; border-top: 1px solid var(--line); vertical-align: top; }
+  thead th { border-top: 0; background: var(--surface2); font-size: 12px; font-weight: 600; color: var(--ink2); text-transform: uppercase; letter-spacing: 0.04em; }
+  td:first-child { font-weight: 500; width: 30%; }
+  td.us { background: var(--accent-soft); color: var(--accent-ink); }
+  .note { font-size: 13px; color: var(--ink2); }
+  .callout { border-left: 0; background: var(--accent-soft); color: var(--accent-ink); border-radius: 12px; padding: 14px 18px; font-weight: 500; }
+  .src { font-size: 12.5px; color: var(--ink3); line-height: 1.7; }
+  .src a { color: var(--ink2); }
+  .dl { display: grid; grid-template-columns: 160px 1fr; gap: 6px 16px; font-size: 14px; }
+  .dl dt { color: var(--ink2); } .dl dd { margin: 0; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="mark"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 16v3M12 10v9M18 4v15"/></svg></span>Kadro <span style="font-weight: 500; color: var(--ink3)">· étude de marché</span></div>
+    <h1>Kadro face à Nolio et TrueCoach</h1>
+    <p class="lede">Deux références, une de chaque côté de notre positionnement : Nolio, l’outil français des coachs d’endurance, et TrueCoach, l’outil américain des coachs de force au modèle « le coach paie, le client ne paie jamais ». Relevé du 29 août 2026, sources publiques en bas de page.</p>
+  </header>
+
+  <section class="card" style="border-color: var(--ink)">
+    <div class="eyebrow">En bref</div>
+    <div class="grid2">
+      <div>
+        <h3>Ce que Kadro fait en plus, ou mieux</h3>
+        <ul>
+          <li><b>Course et muscu dans un seul outil, avec la même logique</b> : allures depuis la VMA, charges depuis le 1RM. Nolio individualise les allures mais pas les charges ; TrueCoach individualise les charges mais ignore les allures.</li>
+          <li><b>Le suivi des charges en muscu existe chez nous, pas chez Nolio</b> : série par série, kg, RPE, progression par exercice. Chez Nolio, c’est une proposition « en discussion » sur leur feuille de route publique, sans date.</li>
+          <li><b>L’athlète ne paie jamais, pour rien.</b> Nolio vend un Premium athlète à 6,90 € pour planifier ou lire ses records en détail ; TrainingPeaks facture 9 $ par athlète premium.</li>
+          <li><b>L’écran d’accueil dit au coach quoi faire</b> (« À traiter » : fatigue signalée, séance manquée, compétition proche). Nolio et TrueCoach ouvrent sur un calendrier ou une liste de clients : c’est au coach de chercher.</li>
+          <li><b>Un check-in de forme quotidien en trois tapes</b>, relié à une alerte coach. Nolio l’a sous forme de questionnaires (Hooper) puissants mais lourds ; TrueCoach n’a que des « habitudes ».</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Ce qu’ils font mieux que nous, aujourd’hui</h3>
+        <ul>
+          <li><b>Les connecteurs.</b> Nolio parle à Garmin, Polar, Coros, Suunto, Wahoo, Zwift, Oura, Whoop, Withings, Concept2, Apple Watch, et <b>envoie les séances structurées sur la montre</b>. Nous : Strava, et « Garmin bientôt ». C’est notre plus gros retard.</li>
+          <li><b>L’analyse fine</b> : TRIMP, Coggan, W′bal, VAP, détection d’intervalles, HRV. Nolio est un outil d’analyse ; nous sommes un outil de suivi. À assumer, pas à copier.</li>
+          <li><b>La distribution</b> : Nolio est fournisseur officiel de la FFC (jusqu’en 2028) et partenaire de la FFA, avec ≈ 1 500 entraîneurs et 30 000 sportifs (1 000 coachs fin 2022 : ils grandissent). TrueCoach revendique 20 000 coachs dans 100 pays.</li>
+          <li><b>L’encaissement</b> : les deux permettent au coach de facturer ses athlètes (Stripe). Nous n’avons rien prévu.</li>
+          <li><b>Les vidéos d’exercices</b> : 200 + chez Nolio, une grande bibliothèque filmée chez TrueCoach. La nôtre est un chiffre de maquette.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= NOLIO ================= -->
+  <section>
+    <div class="eyebrow">Fiche 1</div>
+    <h2>Nolio — l’outil des coachs d’endurance français</h2>
+    <p class="lede" style="font-size: 15px">Créé en 2017 comme projet étudiant par deux ingénieurs grenoblois, société depuis fin 2019. Cyclisme, running, trail, triathlon ; les fédérations comme canal de distribution.</p>
+    <div class="grid3" style="margin: 18px 0">
+      <div class="kpi"><span class="v">6 – 9</span><span class="l">salariés (Seyssinet-Pariset, 38)</span></div>
+      <div class="kpi"><span class="v">≈ 1 500</span><span class="l">entraîneurs (1 000 fin 2022) · ≈ 30 000 sportifs</span></div>
+      <div class="kpi"><span class="v">188 k€</span><span class="l">résultat net 2025 · CA confidentiel</span></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Identité</h3>
+        <dl class="dl">
+          <dt>Société</dt><dd>NOLIO SAS, créée le 8 nov. 2019, capital 70 000 €</dd>
+          <dt>Fondateurs</dt><dd>Alexandre Bouquet (président) et François Dupont (DG), nés en 1994-95</dd>
+          <dt>Levée de fonds</dt><dd>Aucune trouvée — croissance autofinancée</dd>
+          <dt>Chiffre d’affaires</dt><dd>Non publié (confidentialité des comptes). <b>Mon estimation : 0,8 à 1,2 M€ par an</b> — 1 500 coachs à ≈ 28 €/mois en moyenne ≈ 0,5 M€, plus les clubs (45 €/mois), les Premium athlètes (6,90 €) et les commissions de la marketplace. Un résultat net de 188 k€ avec 7 personnes rend un CA inférieur à 0,8 M€ peu probable.</dd>
+          <dt>Partenariats</dt><dd>Partenaire de la FFA depuis nov. 2022 (coach 20 €/mois pour 25 licenciés, club 45 €/mois pour 3 coachs et 120 licenciés, 6 mois offerts aux clubs affiliés) ; fournisseur officiel de la FFC depuis juin 2023, jusqu’en 2028, mêmes conditions club.</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <h3>Comment ça marche</h3>
+        <ul>
+          <li><b>Le coach paie</b> : 19,90 €/mois (3 athlètes) → 39,90 € (30), +1,50 € par athlète au-delà, +12 € par coach supplémentaire. Clubs 29,90 → 49,90 €. Un mois d’essai sans carte.</li>
+          <li><b>L’athlète est gratuit… jusqu’à un point</b> : synchro, séances structurées et analyse sont gratuites ; planifier soi-même, créer des modèles, lire ses records en détail, mesurer la HRV et personnaliser ses bilans demandent le <b>Premium à 6,90 €/mois</b>. Sur l’App Store, ce prix est le reproche le plus fréquent.</li>
+          <li><b>Marketplace</b> : les coachs vendent des plans et du coaching, Nolio encaisse via Stripe et prend des frais de plateforme.</li>
+          <li><b>Le calendrier est le cœur</b> : deux calendriers (prévu / réalisé), modèles, cycles, questionnaires, messages programmés, assignation à un groupe puis individualisation.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="grid2" style="margin-top: 18px">
+      <div class="card">
+        <h3>Ce qu’ils proposent <span class="pill p-good">fort</span></h3>
+        <ul class="two" style="columns: 1">
+          <li>Séances structurées endurance en FC, puissance, allure ou RPE, <b>envoyées sur la montre</b> (Garmin, Polar, Coros, Suunto, Wahoo, Zwift…)</li>
+          <li>Trois modèles de charge : Foster (RPE × durée), Coggan (puissance/FTP), TRIMP (Banister, Edwards)</li>
+          <li>Analyse : courbes FC/puissance par zone, W′bal, cadence, balance G/D, vitesse ascensionnelle et VAP en trail, détection automatique des meilleurs efforts</li>
+          <li>Monitoring : sommeil, FC repos, poids, VMA, FTP, PMA, HRV (ceinture ou caméra), métriques personnalisées, records, usure du matériel</li>
+          <li>Questionnaires (Hooper, fatigue, état mental, onboarding) avec suivi centralisé</li>
+          <li>Équipe : groupes et sous-groupes, coachs assistants avec droits limités, tableau de bord de groupe</li>
+          <li>Messagerie par séance, directe et de groupe, messages programmés ; import .fit .zwo .tcx .gpx… ; export Google / Apple Calendar</li>
+          <li>Muscu : 200 + exercices vidéo, exercices personnalisés, supersets, cibles en kg / RPE / RIR, lecteur mobile de séance</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Où ça coince <span class="pill p-warn">faiblesses</span></h3>
+        <ul>
+          <li><b>Pas de suivi des charges en muscu</b> : ni tonnage, ni progression par exercice, ni validation des kilos par l’athlète pendant la séance. C’est une idée « en discussion » sur leur roadmap publique, sans date. La muscu est un « player », pas un système.</li>
+          <li><b>Trop de données pour les non-experts.</b> Le retour récurrent des tests : « bombarde les novices de données techniques », suranalyse, difficulté à relier prévu et réalisé. Un coach de club amateur ou un runner loisir décroche.</li>
+          <li><b>Application athlète jugée instable</b> (4,4/5, 285 notes) : plantages réguliers, import d’historique Apple Watch / Strava incomplet, défilement horizontal parasite dans les stats, impossibilité de décaler ou refuser une séance dans certains plans.</li>
+          <li><b>Le Premium athlète crée une friction</b> dans la relation coach-athlète : l’athlète doit payer pour toucher à son propre plan.</li>
+          <li><b>Aucune priorisation pour le coach</b> : le produit ne dit pas « voilà les trois athlètes à regarder ce matin » ; il montre un calendrier et un tableau de groupe.</li>
+          <li>Interface dense, pensée web d’abord ; le printemps 2026 a surtout accéléré l’app (× 3 au lancement) et rangé le calendrier, signe que le sujet est connu.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TRUECOACH ================= -->
+  <section>
+    <div class="eyebrow">Fiche 2</div>
+    <h2>TrueCoach — le standard américain du coaching de force à distance</h2>
+    <p class="lede" style="font-size: 15px">Fondé en 2015 à Boulder (Colorado) par Casey Jenks, racheté en mars 2020 par TSG / Xplor Technologies. Un seul métier : programmer des séances de musculation et les livrer dans une app cliente.</p>
+    <div class="grid3" style="margin: 18px 0">
+      <div class="kpi"><span class="v">20 000</span><span class="l">coachs et salles revendiqués, 100 + pays</span></div>
+      <div class="kpi"><span class="v">≈ 21</span><span class="l">salariés · 2,6 M$ levés avant rachat</span></div>
+      <div class="kpi"><span class="v">4,8 / 5</span><span class="l">Capterra, 838 avis · app coach 1,8 / 5</span></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Identité</h3>
+        <dl class="dl">
+          <dt>Société</dt><dd>TrueCoach by Xplor (groupe Xplor Technologies, non coté). Rachat annoncé le 3 mars 2020 par TSG.</dd>
+          <dt>Financement</dt><dd>2,6 M$ en 4 tours (2016 → 2019) avant l’acquisition.</dd>
+          <dt>Chiffre d’affaires</dt><dd>Non publié. Les estimateurs tiers donnent 1,3 M$ d’ARR en 2021 (Latka) et ≈ 2 M$ (ZoomInfo) — <b>probablement très sous-estimé</b> : 20 000 comptes revendiqués à 26–137 $/mois donneraient plutôt 8 à 12 M$ s’ils étaient tous payants, ce qui n’est pas garanti (comptes en essai, churn). Retenir : « quelques millions de dollars ».</dd>
+          <dt>Cible</dt><dd>Coachs indépendants et petites salles aux États-Unis, Royaume-Uni, Canada, Australie. Anglais uniquement.</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <h3>Comment ça marche</h3>
+        <ul>
+          <li><b>Le coach paie, le client jamais</b> : Starter 29,98 $ (5 clients), Standard 69,98 $ (20), Pro 164,98 $ (50), au-delà sur devis jusqu’à 250. Annuel ≈ 1 à 2 mois offerts. 14 jours d’essai, 90 jours satisfait ou remboursé.</li>
+          <li><b>Programmation d’abord</b> : le coach construit des blocs séries × reps × charge à partir d’une grande bibliothèque vidéo, copie la semaine suivante en un clic, envoie dans l’app cliente.</li>
+          <li><b>Le client filme ses séries</b> dans l’app ; le coach corrige la technique sans visio. C’est la fonction la plus citée des avis.</li>
+          <li><b>Business intégré</b> : encaissement Stripe (5 % de frais, 4 pays seulement), app en marque blanche à partir de Standard, suivi d’habitudes, nutrition via MyFitnessPal.</li>
+          <li><b>Wearables</b> : synchronisation Apple Watch, Garmin, Whoop, Fitbit pour la FC, le sommeil et les activités — mais pas de séance structurée poussée sur la montre, pas de zones d’allure.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="grid2" style="margin-top: 18px">
+      <div class="card">
+        <h3>Ce qu’ils proposent <span class="pill p-good">fort</span></h3>
+        <ul>
+          <li>Éditeur de programmes rapide, modèles, duplication semaine à semaine, modifications par bloc</li>
+          <li>Bibliothèque d’exercices filmée, exercices personnalisés avec vidéo</li>
+          <li>Upload vidéo par le client, commentaires du coach sur chaque série</li>
+          <li>Profil client : mesures corporelles, photos de progression, taux de réalisation, tableau de bord « qui est en retard »</li>
+          <li>Messagerie rattachée au profil client, suivi d’habitudes, macros via MyFitnessPal</li>
+          <li>Paiements récurrents, app en marque blanche, support réactif (le point le plus loué)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Où ça coince <span class="pill p-warn">faiblesses</span></h3>
+        <ul>
+          <li><b>Zéro endurance</b> : pas d’allures, pas de VMA, pas de séance structurée course, pas d’envoi sur montre. Un coach de running ne peut pas s’en servir.</li>
+          <li><b>L’app coach est un « visualiseur »</b> (1,8/5) : on ne programme pas depuis le téléphone, il faut un ordinateur.</li>
+          <li>Bugs récurrents dans les avis : lenteurs, gels, pertes de données occasionnelles, Android en retrait, recherche d’exercices capricieuse.</li>
+          <li>Paiements limités à 4 pays anglophones ; interface en anglais seulement — <b>inutilisable tel quel pour un coach français</b>.</li>
+          <li>Le prix grimpe vite avec le nombre de clients (× 5,5 entre 5 et 50 clients) ; pas de tarif club multi-coachs.</li>
+          <li>Bibliothèque orientée CrossFit ; pas de check-in de forme, pas de charge d’entraînement, pas de gestion de compétition.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TABLEAU ================= -->
+  <section>
+    <div class="eyebrow">Face à face</div>
+    <h2>Fonction par fonction</h2>
+    <p class="note" style="margin: 0 0 12px">Kadro = ce qui est dessiné dans la maquette du 29 août 2026, pas ce qui est codé. Les colonnes concurrentes reflètent leurs sites et centres d’aide à la même date.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Fonction</th><th>Nolio</th><th>TrueCoach</th><th>Kadro (maquette)</th></tr></thead>
+        <tbody>
+          <tr><td>Allures individualisées depuis la VMA</td><td><span class="pill p-good">Oui</span> zones FC / puissance / allure</td><td><span class="pill p-bad">Non</span></td><td class="us"><span class="pill p-good">Oui</span> par athlète, visible dans l’éditeur</td></tr>
+          <tr><td>Charges individualisées depuis le 1RM</td><td><span class="pill p-warn">Partiel</span> cibles en kg / RPE / RIR saisies par le coach</td><td><span class="pill p-warn">Partiel</span> % de 1RM par programme</td><td class="us"><span class="pill p-good">Oui</span> % 1RM → kg par athlète, comme les allures</td></tr>
+          <tr><td>Enregistrement muscu série par série, progression des charges</td><td><span class="pill p-bad">Non</span> « en discussion » sur la roadmap</td><td><span class="pill p-good">Oui</span> + vidéo des séries</td><td class="us"><span class="pill p-good">Oui</span> reps, kg, RPE, repos, tonnage, 1RM estimé</td></tr>
+          <tr><td>Check-in de forme quotidien + alerte coach</td><td><span class="pill p-warn">Partiel</span> questionnaires Hooper, pas d’alerte en une tape</td><td><span class="pill p-bad">Non</span> habitudes seulement</td><td class="us"><span class="pill p-good">Oui</span> 3 tapes, rouge 2 jours de suite = « À traiter »</td></tr>
+          <tr><td>Écran coach « quoi faire aujourd’hui »</td><td><span class="pill p-bad">Non</span> calendrier + tableau de groupe</td><td><span class="pill p-warn">Partiel</span> liste « en retard »</td><td class="us"><span class="pill p-good">Oui</span> « À traiter » + séances du jour</td></tr>
+          <tr><td>Charge d’entraînement, ratio aigu / chronique</td><td><span class="pill p-good">Oui</span> Foster, Coggan, TRIMP</td><td><span class="pill p-bad">Non</span></td><td class="us"><span class="pill p-warn">Partiel</span> charge UA + ratio, un seul modèle</td></tr>
+          <tr><td>Séances envoyées sur la montre</td><td><span class="pill p-good">Oui</span> Garmin, Polar, Coros, Suunto, Wahoo, Zwift</td><td><span class="pill p-bad">Non</span></td><td class="us"><span class="pill p-bad">Non</span> pas prévu dans la maquette</td></tr>
+          <tr><td>Connecteurs données</td><td><span class="pill p-good">10 +</span> montres, Strava, Oura, Whoop, Withings, Concept2</td><td><span class="pill p-warn">Partiel</span> Apple Watch, Garmin, Whoop, Fitbit</td><td class="us"><span class="pill p-warn">Partiel</span> Strava ; Garmin « bientôt »</td></tr>
+          <tr><td>Planning équipe (tous les athlètes × jours)</td><td><span class="pill p-good">Oui</span> groupes, sous-groupes</td><td><span class="pill p-warn">Partiel</span> par client</td><td class="us"><span class="pill p-good">Oui</span> semaine + mois, manqué en rouge</td></tr>
+          <tr><td>Bibliothèque de modèles réutilisables</td><td><span class="pill p-good">Oui</span></td><td><span class="pill p-good">Oui</span></td><td class="us"><span class="pill p-good">Oui</span></td></tr>
+          <tr><td>Messagerie intégrée</td><td><span class="pill p-good">Oui</span> par séance + directe + groupe</td><td><span class="pill p-good">Oui</span></td><td class="us"><span class="pill p-good">Oui</span> séance partagée dans le fil</td></tr>
+          <tr><td>Multi-coachs / clubs</td><td><span class="pill p-good">Oui</span> offres club, droits assistants, fédérations</td><td><span class="pill p-bad">Non</span></td><td class="us"><span class="pill p-warn">Partiel</span> Structure : 3 coachs, dessiné, pas détaillé</td></tr>
+          <tr><td>Encaissement des athlètes par le coach</td><td><span class="pill p-good">Oui</span> Stripe + marketplace</td><td><span class="pill p-warn">Partiel</span> Stripe, 4 pays, 5 %</td><td class="us"><span class="pill p-bad">Non</span></td></tr>
+          <tr><td>Vidéos d’exercices</td><td><span class="pill p-good">200 +</span></td><td><span class="pill p-good">Grande bibliothèque</span></td><td class="us"><span class="pill p-bad">À produire</span> 142 est un chiffre de maquette</td></tr>
+          <tr><td>L’athlète paie ?</td><td><span class="pill p-warn">Premium 6,90 €</span> pour planifier / records / HRV</td><td><span class="pill p-good">Jamais</span></td><td class="us"><span class="pill p-good">Jamais</span></td></tr>
+          <tr><td>Langue, marché</td><td>FR, EN · France, fédérations</td><td>EN · US, UK, CA, AU</td><td class="us">FR d’abord · France</td></tr>
+          <tr><td>App coach sur mobile</td><td><span class="pill p-good">Oui</span> calendrier refondu 2026</td><td><span class="pill p-bad">1,8 / 5</span> lecture seule</td><td class="us"><span class="pill p-good">Oui</span> consulter, réagir, créer une séance</td></tr>
+          <tr><td>Prix pour 20 athlètes</td><td class="num">≈ 40 € / mois</td><td>≈ 64 € / mois (69,98 $)</td><td class="us">39 € / mois</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= CONCLUSIONS ================= -->
+  <section class="grid2">
+    <div class="card">
+      <div class="eyebrow">Ce que ça veut dire pour nous</div>
+      <h3>Le créneau est réel, et il est étroit</h3>
+      <p style="margin: 0 0 8px">Personne ne sert proprement le coach qui fait <b>courir et soulever</b> les mêmes athlètes : Nolio est un outil d’analyse d’endurance qui « tolère » la muscu, TrueCoach un outil de muscu qui ignore l’endurance. Notre promesse tient en une phrase : <b>« une séance écrite une fois, chaque athlète reçoit ses allures et ses charges, et vous voyez qui va mal avant la séance »</b>.</p>
+      <p style="margin: 0">Le risque symétrique : Nolio peut livrer le suivi des charges en quelques mois (c’est sur leur roadmap), et il a 1 500 coachs et deux fédérations pour le distribuer. Notre avantage n’est pas la fonction, c’est la <b>simplicité</b> — le reproche n° 1 fait à Nolio — et le fait que l’athlète n’ait jamais rien à payer.</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow">À faire avant de coder</div>
+      <h3>Trois décisions que l’étude impose</h3>
+      <ul>
+        <li><b>Garmin dès la v1, pas « bientôt ».</b> Sans envoi de la séance sur la montre, un coach Nolio ne bascule pas. Strava seul ne suffit pas.</li>
+        <li><b>Ne pas copier l’analyse de Nolio.</b> Un modèle de charge lisible (le ratio aigu / chronique), pas trois. Notre cible est le coach qui trouve Nolio trop technique, pas celui qui adore W′bal.</li>
+        <li><b>Prévoir l’encaissement en v2.</b> Les deux concurrents permettent au coach de facturer ses athlètes ; pour un indépendant, c’est souvent ce qui fait rester.</li>
+      </ul>
+      <div class="callout" style="margin-top: 12px">Pitch face à Nolio : « aussi précis sur les allures, la muscu en plus, dix fois plus simple, et vos athlètes ne paient jamais ». Face à TrueCoach : « la même livraison de séances, en français, avec la course à pied et les allures ».</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Sources</div>
+    <p class="src">
+      Nolio : <a href="https://www.nolio.io/en/features/">nolio.io/features</a> · <a href="https://www.nolio.io/en/premium/">nolio.io/premium</a> · <a href="https://www.nolio.io/workout-builder/strength/coach/">nolio.io/workout-builder/strength</a> · <a href="https://www.nolio.io/upcoming/features/suivi-des-charges-en-musculation/">roadmap « Suivi des charges en musculation »</a> · <a href="https://www.nolio.io/blog/mise-a-jour-printemps-2026/">mise à jour printemps 2026</a> · <a href="https://www.societe.com/societe/nolio-878803469.html">societe.com — NOLIO SAS</a> · <a href="https://www.directvelo.com/actualite/108597/publi-nolio-loutil-pour-sportifs-entraineurs-et-clubs-est-fournisseur-officiel-de-la-ffc">DirectVelo — fournisseur officiel FFC (oct. 2023)</a> · <a href="https://structures.ffc.fr/nolio-by-ffc/tarifs-accessibilite-inscription/">FFC — Nolio by FFC</a> · <a href="https://stadion-actu.fr/nolio-lapplication-pour-le-suivi-de-lentrainement-sassocie-a-la-ffa/">Stadion — partenariat FFA</a> · <a href="https://coachbox.app/fr/comparer/nolio-tarifs/">Coachbox — tarifs Nolio 2026</a> · <a href="https://apps.apple.com/fr/app/1615773607?see-all=reviews&platform=iphone">App Store — avis</a> · <a href="https://athleexplique.fr/trop-de-statistiques-en-course-a-pied-un-frein-pour-les-debutants-mon-avis-sur-nolio-strava-campus-coach-runmotion-coach-garmin-connect/">Athlé Explique — trop de statistiques</a> · <a href="https://www.runagora.fr/753836-nolio-appli-mobile.html">Runagora — avis</a><br>
+      TrueCoach : <a href="https://truecoach.co/about/">truecoach.co/about</a> · <a href="https://truecoach.co/features/wearables/">truecoach.co/wearables</a> · <a href="https://www.prnewswire.com/news-releases/tsg-announces-acquisition-of-truecoach-301047129.html">PR Newswire — acquisition par TSG (mars 2020)</a> · <a href="https://getlatka.com/companies/truecoach">Latka — revenus estimés</a> · <a href="https://www.zoominfo.com/c/truecoach/458920344">ZoomInfo</a> · <a href="https://www.capterra.com/p/155784/truecoach/">Capterra — 838 avis</a> · <a href="https://coachway.io/articles/truecoach-review/">Coachway — test 2026</a> · <a href="https://www.quickcoach.fit/truecoach-pricing-2026.html">QuickCoach — tarifs 2026</a><br>
+      Les chiffres d’affaires sont des estimations à partir de données publiques partielles ; les effectifs et résultats viennent des registres. Tout est à reconfirmer avant d’être cité à un tiers.
+    </p>
+  </section>
+</div>

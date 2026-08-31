@@ -1,0 +1,696 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "1 · Palette & système"
+    },
+    {
+      "id": "page-2",
+      "name": "2 · Coach · Desktop"
+    },
+    {
+      "id": "page-3",
+      "name": "3 · Coach · Mobile"
+    },
+    {
+      "id": "page-4",
+      "name": "4 · Athlète"
+    },
+    {
+      "id": "page-6",
+      "name": "5 · Renforcement musculaire"
+    },
+    {
+      "id": "page-9",
+      "name": "6 · Analyse, monitoring & montres"
+    },
+    {
+      "id": "page-7",
+      "name": "7 · Premiers pas & états vides"
+    },
+    {
+      "id": "page-8",
+      "name": "8 · Tarifs"
+    },
+    {
+      "id": "page-5",
+      "name": "9 · Mode sombre"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Systeme.dc.html",
+      "title": "Palette & système visuel",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 2150,
+      "page": "page-1"
+    },
+    {
+      "file": "Main.dc.html",
+      "title": "Coach · Aperçu",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "Athletes.dc.html",
+      "title": "Coach · Athlètes",
+      "x": 1540,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "FicheAthlete.dc.html",
+      "title": "Coach · Fiche athlète",
+      "x": 3080,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "Planning.dc.html",
+      "title": "Coach · Planning équipe",
+      "x": 4620,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "Bibliotheque.dc.html",
+      "title": "Coach · Bibliothèque",
+      "x": 0,
+      "y": 1040,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "Editeur.dc.html",
+      "title": "Coach · Éditeur de séance",
+      "x": 1540,
+      "y": 1040,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "Messages.dc.html",
+      "title": "Coach · Messages",
+      "x": 3080,
+      "y": 1040,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "Equipe.dc.html",
+      "title": "Coach · Équipe & réglages",
+      "x": 4620,
+      "y": 1040,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "MobileApercu.dc.html",
+      "title": "Coach mobile · Aperçu",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-3"
+    },
+    {
+      "file": "MobileAthletes.dc.html",
+      "title": "Coach mobile · Athlètes",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-3"
+    },
+    {
+      "file": "MobileFicheAthlete.dc.html",
+      "title": "Coach mobile · Fiche athlète",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-3"
+    },
+    {
+      "file": "MobilePlanning.dc.html",
+      "title": "Coach mobile · Planning",
+      "x": 1470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-3"
+    },
+    {
+      "file": "MobileMessages.dc.html",
+      "title": "Coach mobile · Conversation",
+      "x": 1960,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-3"
+    },
+    {
+      "file": "MobilePlus.dc.html",
+      "title": "Coach mobile · Plus",
+      "x": 2450,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-3"
+    },
+    {
+      "file": "AthleteOnboarding.dc.html",
+      "title": "Athlète · Rejoindre son coach",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "MobileAujourdhui.dc.html",
+      "title": "Athlète · Aujourd’hui",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AthleteSeance.dc.html",
+      "title": "Athlète · Détail de séance",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AthleteCompteRendu.dc.html",
+      "title": "Athlète · Compte-rendu",
+      "x": 1470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AthletePlanning.dc.html",
+      "title": "Athlète · Planning",
+      "x": 1960,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AthleteProgression.dc.html",
+      "title": "Athlète · Progression",
+      "x": 2450,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AthleteCoach.dc.html",
+      "title": "Athlète · Mon coach",
+      "x": 2940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AthleteProfil.dc.html",
+      "title": "Athlète · Profil",
+      "x": 3430,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-4"
+    },
+    {
+      "file": "AthleteWeb.dc.html",
+      "title": "Athlète · Web (tableau de bord)",
+      "x": 0,
+      "y": 984,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "PlanningMois.dc.html",
+      "title": "Coach · Planning · vue mois",
+      "x": 6160,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2"
+    },
+    {
+      "file": "MobileCreerSeance.dc.html",
+      "title": "Coach mobile · Créer une séance",
+      "x": 2940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-3"
+    },
+    {
+      "file": "MobileNotifications.dc.html",
+      "title": "Coach mobile · Notifications",
+      "x": 3430,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-3"
+    },
+    {
+      "file": "AnalyseSeance.dc.html",
+      "title": "Coach · Analyse de séance (VMA)",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-9"
+    },
+    {
+      "file": "AnalyseTrail.dc.html",
+      "title": "Coach · Analyse trail (profil, allure ajustée pente)",
+      "x": 1540,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-9"
+    },
+    {
+      "file": "Monitoring.dc.html",
+      "title": "Coach · Fiche athlète, onglet Monitoring",
+      "x": 3080,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-9"
+    },
+    {
+      "file": "Integrations.dc.html",
+      "title": "Coach · Intégrations & montres",
+      "x": 4620,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-9"
+    },
+    {
+      "file": "AthleteAnalyse.dc.html",
+      "title": "Montres · Athlète · Ma séance analysée",
+      "x": 0,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-9"
+    },
+    {
+      "file": "AthleteMonitoring.dc.html",
+      "title": "Montres · Athlète · Ma forme",
+      "x": 490,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-9"
+    },
+    {
+      "file": "AthleteConnexions.dc.html",
+      "title": "Montres · Athlète · Montres & connexions",
+      "x": 980,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-9"
+    },
+    {
+      "file": "PrixMarche.dc.html",
+      "title": "Positionnement prix face au marché",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1080,
+      "page": "page-8"
+    },
+    {
+      "file": "Tarifs.dc.html",
+      "title": "Coach · Tarifs (web)",
+      "x": 1540,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-8"
+    },
+    {
+      "file": "MobileTarifs.dc.html",
+      "title": "Coach mobile · Tarifs",
+      "x": 3080,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-8"
+    },
+    {
+      "file": "EditeurMuscu.dc.html",
+      "title": "Muscu · Éditeur de séance (coach web)",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-6"
+    },
+    {
+      "file": "FicheMuscu.dc.html",
+      "title": "Muscu · Fiche athlète, onglet Muscu (coach web)",
+      "x": 1540,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-6"
+    },
+    {
+      "file": "MobileCreerMuscu.dc.html",
+      "title": "Muscu · Coach · Créer une séance muscu",
+      "x": 0,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-6"
+    },
+    {
+      "file": "MobileMuscuRetour.dc.html",
+      "title": "Muscu · Coach · Retour de séance",
+      "x": 490,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-6"
+    },
+    {
+      "file": "AthleteMuscuSeance.dc.html",
+      "title": "Muscu · Athlète · Séance du jour",
+      "x": 980,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-6"
+    },
+    {
+      "file": "AthleteMuscuLog.dc.html",
+      "title": "Muscu · Athlète · Enregistrement série par série",
+      "x": 1470,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-6"
+    },
+    {
+      "file": "AthleteMuscuProgression.dc.html",
+      "title": "Muscu · Athlète · Progression des charges",
+      "x": 1960,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-6"
+    },
+    {
+      "file": "ApercuVide.dc.html",
+      "title": "Premiers pas · Aperçu coach à J0",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-7"
+    },
+    {
+      "file": "FicheVide.dc.html",
+      "title": "Premiers pas · Nouvel athlète sans données",
+      "x": 1540,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-7"
+    },
+    {
+      "file": "MobileAthletesVide.dc.html",
+      "title": "Premiers pas · Coach · Aucun athlète",
+      "x": 0,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-7"
+    },
+    {
+      "file": "AthleteProfilSetup.dc.html",
+      "title": "Premiers pas · Athlète · Profil à l’inscription",
+      "x": 490,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-7"
+    },
+    {
+      "file": "AthleteRepos.dc.html",
+      "title": "Premiers pas · Athlète · Jour de repos",
+      "x": 980,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-7"
+    },
+    {
+      "file": "DarkMain.dc.html",
+      "title": "Sombre · Coach Aperçu",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "DarkFicheAthlete.dc.html",
+      "title": "Sombre · Fiche athlète",
+      "x": 1540,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "DarkPlanning.dc.html",
+      "title": "Sombre · Planning équipe",
+      "x": 3080,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "DarkMobileAthletes.dc.html",
+      "title": "Sombre · Coach Athlètes",
+      "x": 0,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "DarkMobilePlanning.dc.html",
+      "title": "Sombre · Coach Planning",
+      "x": 490,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "DarkMobileAujourdhui.dc.html",
+      "title": "Sombre · Athlète Aujourd’hui",
+      "x": 980,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "DarkAthleteProgression.dc.html",
+      "title": "Sombre · Athlète Progression",
+      "x": 1470,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "DarkAthleteCoach.dc.html",
+      "title": "Sombre · Athlète Mon coach",
+      "x": 1960,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "DarkAthleteMuscuLog.dc.html",
+      "title": "Sombre · Athlète Muscu en cours",
+      "x": 2450,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "DarkMobileNotifications.dc.html",
+      "title": "Sombre · Coach Notifications",
+      "x": 2940,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    },
+    {
+      "file": "DarkEditeurMuscu.dc.html",
+      "title": "Sombre · Éditeur muscu",
+      "x": 4620,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "DarkTarifs.dc.html",
+      "title": "Sombre · Tarifs",
+      "x": 6160,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "DarkAnalyseSeance.dc.html",
+      "title": "Sombre · Analyse de séance",
+      "x": 7700,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "DarkIntegrations.dc.html",
+      "title": "Sombre · Intégrations",
+      "x": 9240,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-5"
+    },
+    {
+      "file": "DarkAthleteAnalyse.dc.html",
+      "title": "Sombre · Athlète Ma séance",
+      "x": 3430,
+      "y": 1040,
+      "w": 390,
+      "h": 844,
+      "page": "page-5"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "ana-note",
+      "x": 0,
+      "y": -240,
+      "w": 640,
+      "page": "page-9",
+      "text": "Décision du 29 août 2026 : les connecteurs montres passent en priorité (Garmin, Coros, Polar, Suunto, Apple Watch, Wahoo, Strava, Zwift) — envoi de la séance sur la montre avec les allures de l’athlète, retour automatique du réalisé, sommeil / FC repos / HRV.\n\nAnalyse de séance « à la Nolio, mais moins » : allure et FC dans le temps avec les répétitions en surbrillance, temps par zone, prévu vs réalisé rep par rep, meilleurs efforts détectés, allure ajustée à la pente et vitesse ascensionnelle en trail. Puissance / balance G-D / W′bal : v2, avec capteur de puissance.\n\nMonitoring : sommeil, FC repos, HRV, poids, check-ins — avec des seuils d’alerte qui alimentent « À traiter »."
+    },
+    {
+      "id": "v2-note",
+      "x": 700,
+      "y": -240,
+      "w": 420,
+      "page": "page-9",
+      "text": "À garder pour la V2 (noté, pas dessiné) : un Premium athlète auto-coaché — planifier ses propres séances, bibliothèque, analyse et monitoring sans coach. Julien est lui-même dans ce cas. Tarif à définir (Nolio : 6,90 €/mois)."
+    },
+    {
+      "id": "prix-note",
+      "x": 0,
+      "y": -200,
+      "w": 620,
+      "page": "page-8",
+      "text": "Grille proposée : Solo 19 € (5 athlètes) · Coach 39 € (25) · Structure 89 € (80, 3 coachs), HT, −2 mois en annuel, 1,50 € par athlète au-delà du palier, essai 14 jours sans carte. Athlète toujours gratuit.\n\nÀ gauche : le relevé concurrence d’août 2026 qui justifie ces chiffres. Les prix en dollars sont indicatifs — à reconfirmer avant d’imprimer quoi que ce soit."
+    },
+    {
+      "id": "muscu-note",
+      "x": 0,
+      "y": -220,
+      "w": 620,
+      "page": "page-6",
+      "text": "Renforcement musculaire, même logique que la course : le coach écrit la séance une fois en % du 1RM, chaque athlète voit SA charge en kg. L’athlète enregistre série par série (reps, kg, RPE) avec le chrono de repos ; le coach reçoit le retour séries faites / prévues et la progression des charges par exercice."
+    },
+    {
+      "id": "start-note",
+      "x": 0,
+      "y": -220,
+      "w": 620,
+      "page": "page-7",
+      "text": "Ce que voit un coach le premier jour, et un athlète qui vient d’arriver : pas de VMA, pas de Strava, pas de check-in. Chaque manque a une action à côté. C’est là qu’une app tient la route en démo devant un vrai coach.\n\nModèle économique acté : le coach paie (essai 14 jours, puis abonnement par palier d’athlètes) ; l’athlète est gratuit, tout passe par son coach."
+    },
+    {
+      "id": "cd-note",
+      "x": 0,
+      "y": -200,
+      "w": 560,
+      "page": "page-2",
+      "text": "Parcours coach (web) : Aperçu → il voit ce qu’il doit traiter · Athlètes → la liste qui remplace le tableur · Fiche → tout sur un athlète · Planning → la semaine de toute l’équipe · Bibliothèque + Éditeur → il écrit une séance une fois, chaque athlète reçoit ses propres allures · Messages → le chat qui remplace WhatsApp · Équipe → invitation par code, groupes, abonnement."
+    },
+    {
+      "id": "cm-note",
+      "x": 0,
+      "y": -180,
+      "w": 480,
+      "page": "page-3",
+      "text": "Coach sur mobile = la version « sur le terrain » : consulter, réagir, écrire. La création de séances et le planning d’équipe restent surtout sur le web."
+    },
+    {
+      "id": "ath-note",
+      "x": 0,
+      "y": -200,
+      "w": 560,
+      "page": "page-4",
+      "text": "Athlète = gratuit, tout passe par son coach (modèle acté). Parcours : rejoindre son coach avec un code → chaque matin, check-in de forme + séance du jour → détail de la séance avec ses allures → après la séance, compte-rendu (Strava + ressenti + RPE) envoyé au coach → planning, progression, chat, profil.\n\nEn bas : la même chose sur le web pour l’athlète qui préfère l’ordinateur."
+    },
+    {
+      "id": "dark-note",
+      "x": 0,
+      "y": -180,
+      "w": 520,
+      "page": "page-5",
+      "text": "Mode sombre : mêmes écrans, mêmes jetons. Fond #0E1216, surfaces #161B21, accent éclairci #5B8CFF, statuts éclaircis sur fonds profonds. Le bouton principal passe en blanc."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
+}
