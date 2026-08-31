@@ -34,6 +34,18 @@ export const routes: Routes = [
         path: 'athletes/:id',
         loadComponent: () => import('./pages/athlete-detail.page').then((m) => m.AthleteDetailPage),
       },
+      {
+        path: 'planning',
+        loadComponent: () => import('./pages/planning.page').then((m) => m.PlanningPage),
+      },
+      {
+        path: 'bibliotheque',
+        loadComponent: () => import('./pages/library.page').then((m) => m.LibraryPage),
+      },
+      {
+        path: 'bibliotheque/nouvelle',
+        loadComponent: () => import('./pages/template-editor.page').then((m) => m.TemplateEditorPage),
+      },
     ],
   },
   { path: '**', redirectTo: '' },
