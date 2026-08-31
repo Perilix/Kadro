@@ -16,6 +16,7 @@ export default function TabsLayout() {
   const t = useTheme();
   const { ready, user } = useAuth();
   if (ready && !user) return <Redirect href="/connexion" />;
+  if (ready && user && user.role === 'coach') return <Redirect href="/(coach)/apercu" />;
   return (
     <Tabs
       screenOptions={{

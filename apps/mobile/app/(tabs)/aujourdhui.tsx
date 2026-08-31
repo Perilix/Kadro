@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ActivityDetail, CheckinToday, PlannedSession, PlannedSessionDetail } from '@kadro/shared';
@@ -271,6 +271,23 @@ export default function AujourdhuiScreen() {
                   {session.expectedDifficulty != null ? ` (attendue ${session.expectedDifficulty}/10)` : ''}
                 </Text>
               ) : null}
+            </View>
+          ) : session.type === 'strength' ? (
+            <View style={{ marginTop: 14, gap: 8 }}>
+              <Button
+                label="Enregistrer série par série"
+                onPress={() => router.push({ pathname: '/muscu/[id]', params: { id: session.id } })}
+              />
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <Input
+                  value={durationMin}
+                  onChangeText={setDurationMin}
+                  placeholder="Ou juste la durée (min)"
+                  keyboardType="number-pad"
+                  style={{ flex: 1 }}
+                />
+                <Button label="Marquer réalisée" ghost onPress={() => void markDone()} disabled={completing || !durationMin} />
+              </View>
             </View>
           ) : (
             <View style={{ marginTop: 14, flexDirection: 'row', gap: 8, alignItems: 'center' }}>

@@ -61,6 +61,53 @@ const ROSTER_COLS = '1.5fr 1fr 0.95fr 1.15fr 1.15fr';
       <a class="btn primary" routerLink="/bibliotheque/nouvelle"><ui-icon name="plus" [size]="18" [sw]="2" />Nouvelle séance</a>
     </header>
 
+    @if (showOnboarding()) {
+      <section class="card ob">
+        <div class="section-head"><h2>Premiers pas</h2><span class="faint small-txt">{{ obDone() }} / 3</span></div>
+        <a class="row ob-step" routerLink="/equipe">
+          <span class="ob-n" [class.ok]="roster().length > 0">
+            @if (roster().length > 0) {
+              <ui-icon name="check" [size]="13" [sw]="3" />
+            } @else {
+              1
+            }
+          </span>
+          <div class="ob-txt">
+            <div class="ob-t" [class.done-t]="roster().length > 0">Invitez votre premier athlète</div>
+            <div class="muted ob-s">Partagez votre code d'équipe — l'athlète installe l'app, entre le code, et apparaît ici.</div>
+          </div>
+          <ui-icon name="chevron" [size]="16" />
+        </a>
+        <a class="row ob-step" routerLink="/bibliotheque/nouvelle">
+          <span class="ob-n" [class.ok]="hasTemplates()">
+            @if (hasTemplates()) {
+              <ui-icon name="check" [size]="13" [sw]="3" />
+            } @else {
+              2
+            }
+          </span>
+          <div class="ob-txt">
+            <div class="ob-t" [class.done-t]="hasTemplates()">Écrivez votre première séance</div>
+            <div class="muted ob-s">Une séance écrite une fois — chaque athlète recevra ses allures et ses charges.</div>
+          </div>
+          <ui-icon name="chevron" [size]="16" />
+        </a>
+        <a class="row ob-step" routerLink="/planning">
+          <span class="ob-n" [class.ok]="hasSessions()">
+            @if (hasSessions()) {
+              <ui-icon name="check" [size]="13" [sw]="3" />
+            } @else {
+              3
+            }
+          </span>
+          <div class="ob-txt">
+            <div class="ob-t" [class.done-t]="hasSessions()">Assignez-la sur le planning</div>
+            <div class="muted ob-s">Elle partira sur la montre de chaque athlète la veille au soir, avec ses allures.</div>
+          </div>
+          <ui-icon name="chevron" [size]="16" />
+        </a>
+      </section>
+    }
     @if (dashboard(); as d) {
       <div class="kpis row">
         <div class="card kpi">
@@ -199,6 +246,15 @@ const ROSTER_COLS = '1.5fr 1fr 0.95fr 1.15fr 1.15fr';
     .vol-head h2 { flex: 1 1 auto; }
     .vol-total { font-size: 28px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; }
     .vol-cap { font-size: 13px; font-weight: 500; letter-spacing: 0; }
+    .ob { margin-bottom: 0; }
+    .ob-step { gap: 14px; padding: 12px 16px; border-top: 1px solid var(--line); color: var(--ink); }
+    .ob-step:hover { background: var(--surface2); }
+    .ob-n { width: 24px; height: 24px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; background: var(--neutral-soft); color: var(--ink2); flex: 0 0 auto; }
+    .ob-n.ok { background: var(--good); color: #fff; }
+    .ob-txt { flex: 1 1 auto; line-height: 1.3; min-width: 0; }
+    .ob-t { font-weight: 600; }
+    .ob-t.done-t { color: var(--ink3); text-decoration: line-through; }
+    .ob-s { font-size: 12.5px; }
   `,
 })
 export class DashboardPage implements OnInit {
@@ -216,16 +272,37 @@ export class DashboardPage implements OnInit {
     return list.slice(0, 3).join(', ');
   });
 
+  readonly templateCount = signal<number | null>(null);
+
+  hasTemplates(): boolean {
+    return (this.templateCount() ?? 0) > 0;
+  }
+
+  hasSessions(): boolean {
+    const d = this.dashboard();
+    return d != null && (d.kpis.sessionsPlanned > 0 || d.kpis.sessionsDone > 0);
+  }
+
+  obDone(): number {
+    return [this.roster().length > 0, this.hasTemplates(), this.hasSessions()].filter(Boolean).length;
+  }
+
+  showOnboarding(): boolean {
+    return this.dashboard() != null && this.templateCount() != null && this.obDone() < 3;
+  }
+
   async ngOnInit(): Promise<void> {
-    const [dashboard, alerts, roster] = await Promise.all([
+    const [dashboard, alerts, roster, templates] = await Promise.all([
       this.api.get<CoachDashboard>('/team/dashboard'),
       this.api.get<Page<Alert>>('/alerts'),
       this.api.get<Page<AthleteListItem>>('/athletes?sort=form'),
+      this.api.get<{ length: number }[]>('/templates').catch(() => []),
     ]);
     this.names = new Map(roster.items.map((a) => [a.id, `${a.firstName} ${a.lastName}`]));
     this.dashboard.set(dashboard);
     this.alerts.set(alerts.items);
     this.roster.set(roster.items);
+    this.templateCount.set(templates.length);
   }
 
   athleteName(id: string): string {

@@ -75,6 +75,43 @@ export function Label({ children }: { children: string }) {
   return <Text style={{ color: t.ink2, fontSize: 13, fontWeight: '500', marginTop: 14, marginBottom: 6 }}>{children}</Text>;
 }
 
+export function IconArrow({ dir }: { dir: 'left' | 'right' }) {
+  const t = useTheme();
+  return (
+    <Text style={{ color: t.ink2, fontSize: 18, fontWeight: '600', lineHeight: 20 }}>
+      {dir === 'left' ? '‹' : '›'}
+    </Text>
+  );
+}
+
+export function StatusPill({ level }: { level: 'good' | 'warn' | 'bad' | 'none' }) {
+  const t = useTheme();
+  const map = {
+    good: { label: 'Bonne forme', color: t.good, soft: t.goodSoft },
+    warn: { label: 'À surveiller', color: t.warn, soft: t.warnSoft },
+    bad: { label: 'Fatigue', color: t.bad, soft: t.badSoft },
+    none: { label: 'Pas de check-in', color: t.ink3, soft: t.neutralSoft },
+  }[level];
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        height: 26,
+        paddingHorizontal: 10,
+        borderRadius: 999,
+        backgroundColor: map.soft,
+      }}
+    >
+      <View style={{ width: 8, height: 8, borderRadius: 999, backgroundColor: map.color }} />
+      <Text style={{ color: level === 'none' ? t.ink2 : map.color, fontSize: 12, fontWeight: '500' }}>
+        {map.label}
+      </Text>
+    </View>
+  );
+}
+
 export function StatusDot({ level, label }: { level: 'good' | 'warn' | 'bad' | 'none'; label: string }) {
   const t = useTheme();
   const color = level === 'good' ? t.good : level === 'warn' ? t.warn : level === 'bad' ? t.bad : t.ink3;

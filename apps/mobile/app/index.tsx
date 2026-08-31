@@ -11,5 +11,6 @@ export default function Index() {
       </View>
     );
   }
-  return <Redirect href={user ? '/(tabs)/aujourdhui' : '/connexion'} />;
+  if (!user) return <Redirect href="/connexion" />;
+  return <Redirect href={user.role === 'coach' ? '/(coach)/apercu' : '/(tabs)/aujourdhui'} />;
 }
