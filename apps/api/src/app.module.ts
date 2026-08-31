@@ -16,6 +16,7 @@ import { CheckinsModule } from './checkins/checkins.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ChatModule } from './chat/chat.module';
+import { ActivitiesModule } from './activities/activities.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ChatModule } from './chat/chat.module';
     RealtimeModule,
     NotificationsModule,
     ChatModule,
+    ActivitiesModule,
     AuthModule,
     InviteModule,
   ],
