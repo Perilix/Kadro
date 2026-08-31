@@ -225,6 +225,7 @@ function toListItem(row: RosterRow): AthleteListItem {
     adherence7d: s.adherence7d,
     acuteChronicRatio: s.acuteChronicRatio,
     volume7dKm: s.volume7dKm,
+    sleepAvg7dMin: s.sleepAvg7dMin,
     lastActivityAt: s.lastActivityAt ? new Date(s.lastActivityAt).toISOString() : null,
     nextSessionDate: s.nextSessionDate,
   };

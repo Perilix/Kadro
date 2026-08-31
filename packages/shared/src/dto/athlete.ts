@@ -74,6 +74,7 @@ export const zAthleteListItem = z.object({
   adherence7d: z.number().nullable(),
   acuteChronicRatio: z.number().nullable(),
   volume7dKm: z.number().nullable(),
+  sleepAvg7dMin: z.number().nullable(),
   lastActivityAt: zIsoInstant.nullable(),
   nextSessionDate: zDateYmd.nullable(),
 });

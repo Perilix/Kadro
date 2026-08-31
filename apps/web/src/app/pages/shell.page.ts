@@ -1,29 +1,62 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import type { Conversation, Page as ApiPage, AthleteListItem } from '@kadro/shared';
+import { ApiClient } from '../core/api-client';
 import { AuthStore } from '../core/auth-store';
+import { IconComponent } from '../ui/icon.component';
+import { AvatarComponent } from '../ui/avatar.component';
 
 @Component({
   selector: 'app-shell-page',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent, AvatarComponent],
   template: `
     <div class="layout">
       <aside class="sidebar">
-        <div class="brand">Kadro</div>
-        <nav>
-          <a routerLink="/apercu" routerLinkActive="active">Aperçu</a>
-          <a routerLink="/athletes" routerLinkActive="active">Athlètes</a>
-          <a routerLink="/planning" routerLinkActive="active">Planning</a>
-          <a routerLink="/bibliotheque" routerLinkActive="active">Bibliothèque</a>
-          <a routerLink="/messages" routerLinkActive="active">Messages</a>
-          <a routerLink="/integrations" routerLinkActive="active">Intégrations</a>
-          <a routerLink="/equipe" routerLinkActive="active">Équipe</a>
+        <div class="logo row">
+          <span class="logo-mark"><ui-icon name="logo" [size]="16" [sw]="2.2" /></span>
+          <span class="logo-text">Kadro</span>
+        </div>
+        <nav class="col">
+          <a class="nav row" routerLink="/apercu" routerLinkActive="active">
+            <ui-icon name="grid" /><span>Aperçu</span>
+          </a>
+          <a class="nav row" routerLink="/athletes" routerLinkActive="active">
+            <ui-icon name="users" /><span>Athlètes</span>
+            @if (athleteCount() > 0) {
+              <span class="pill count num">{{ athleteCount() }}</span>
+            }
+          </a>
+          <a class="nav row" routerLink="/planning" routerLinkActive="active">
+            <ui-icon name="calendar" /><span>Planning</span>
+          </a>
+          <a class="nav row" routerLink="/bibliotheque" routerLinkActive="active">
+            <ui-icon name="library" /><span>Bibliothèque</span>
+          </a>
+          <a class="nav row" routerLink="/messages" routerLinkActive="active">
+            <ui-icon name="message" /><span>Messages</span>
+            @if (unread() > 0) {
+              <span class="pill count num">{{ unread() }}</span>
+            }
+          </a>
         </nav>
-        <div class="footer">
-          <div class="who">
-            <div class="name">{{ auth.user()?.firstName }} {{ auth.user()?.lastName }}</div>
-            <div class="team muted">{{ auth.team()?.name }}</div>
+        <div class="spacer"></div>
+        <div class="col bottom">
+          <a class="nav row" routerLink="/integrations" routerLinkActive="active">
+            <ui-icon name="sync" /><span>Intégrations</span>
+          </a>
+          <a class="nav row" routerLink="/equipe" routerLinkActive="active">
+            <ui-icon name="settings" /><span>Équipe & réglages</span>
+          </a>
+          <div class="who row">
+            <ui-avatar [name]="fullName()" [size]="32" />
+            <div class="who-txt">
+              <div class="who-name">{{ auth.user()?.firstName }}</div>
+              <div class="faint who-sub">Coach · {{ auth.team()?.name }}</div>
+            </div>
+            <button class="icon-btn out" type="button" (click)="logout()" title="Déconnexion">
+              <ui-icon name="logout" [size]="17" />
+            </button>
           </div>
-          <button class="btn btn-ghost" type="button" (click)="logout()">Déconnexion</button>
         </div>
       </aside>
       <main class="content">
@@ -32,32 +65,52 @@ import { AuthStore } from '../core/auth-store';
     </div>
   `,
   styles: `
-    .layout { display: grid; grid-template-columns: 220px 1fr; min-height: 100dvh; }
+    .layout { display: grid; grid-template-columns: 240px 1fr; min-height: 100dvh; }
     .sidebar {
-      display: flex; flex-direction: column; gap: 24px;
-      background: var(--surface); border-right: 1px solid var(--line); padding: 20px 14px;
-      position: sticky; top: 0; height: 100dvh;
+      display: flex; flex-direction: column;
+      border-right: 1px solid var(--line); background: var(--surface);
+      padding: 20px 16px; position: sticky; top: 0; height: 100dvh;
     }
-    .brand { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; padding: 0 10px; }
-    nav { display: flex; flex-direction: column; gap: 2px; }
-    nav a, nav .soon {
-      padding: 9px 10px; border-radius: var(--radius-control);
-      font-size: 14px; font-weight: 500; color: var(--ink2);
-    }
-    nav a.active { background: var(--nav-active); color: var(--ink); }
-    nav a:hover { color: var(--ink); }
-    nav .soon { color: var(--ink3); cursor: default; }
-    nav .soon::after { content: 'bientôt'; font-size: 10px; margin-left: 6px; color: var(--ink3); }
-    .footer { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding: 0 10px; }
-    .who .name { font-size: 13px; font-weight: 600; }
-    .who .team { font-size: 12px; }
-    .footer .btn { justify-content: center; font-size: 13px; padding: 7px 12px; }
-    .content { padding: 28px 32px; max-width: 1100px; width: 100%; }
+    .logo { gap: 10px; padding: 4px 12px 24px; }
+    .logo-mark { display: inline-flex; width: 28px; height: 28px; border-radius: 8px; background: var(--btn-primary-bg); color: var(--btn-primary-ink); align-items: center; justify-content: center; }
+    .logo-text { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; }
+    nav, .bottom { gap: 2px; }
+    .nav { gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-weight: 500; color: var(--ink2); }
+    .nav ui-icon { color: var(--ink3); }
+    .nav span:not(.pill) { flex: 1 1 auto; }
+    .nav:hover { color: var(--ink); }
+    .nav.active { background: var(--nav-active); color: var(--ink); }
+    .nav.active ui-icon { color: var(--ink); }
+    .spacer { flex: 1 1 auto; }
+    .who { gap: 12px; padding: 12px 12px 4px; margin-top: 8px; border-top: 1px solid var(--line); }
+    .who-txt { line-height: 1.2; flex: 1 1 auto; min-width: 0; }
+    .who-name { font-weight: 600; font-size: 13px; }
+    .who-sub { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .out { width: 30px; height: 30px; border: none; background: transparent; }
+    .out:hover { color: var(--bad); }
+    .content { padding: 28px 32px; min-width: 0; display: flex; flex-direction: column; gap: 22px; }
   `,
 })
-export class ShellPage {
+export class ShellPage implements OnInit {
   readonly auth = inject(AuthStore);
+  private readonly api = inject(ApiClient);
   private readonly router = inject(Router);
+  readonly athleteCount = signal(0);
+  readonly unread = signal(0);
+
+  fullName(): string {
+    const u = this.auth.user();
+    return u ? `${u.firstName} ${u.lastName}` : '';
+  }
+
+  async ngOnInit(): Promise<void> {
+    const [roster, conversations] = await Promise.all([
+      this.api.get<ApiPage<AthleteListItem>>('/athletes?limit=100').catch(() => null),
+      this.api.get<Conversation[]>('/conversations').catch(() => []),
+    ]);
+    this.athleteCount.set(roster?.items.length ?? 0);
+    this.unread.set(conversations.reduce((sum, c) => sum + c.unread, 0));
+  }
 
   async logout(): Promise<void> {
     await this.auth.logout();

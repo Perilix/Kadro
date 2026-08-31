@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Athlete, AthleteSchema } from '../athletes/athlete.schema';
 import { AlertsModule } from '../alerts/alerts.module';
+import { CompletedSession, CompletedSessionSchema } from '../activities/completed-session.schema';
 import { Checkin, CheckinSchema } from '../checkins/checkin.schema';
 import { PlannedSession, PlannedSessionSchema } from '../planning/planned-session.schema';
 import { DashboardService } from './dashboard.service';
@@ -15,6 +16,7 @@ import { TeamsService } from './teams.service';
       { name: Team.name, schema: TeamSchema },
       { name: Athlete.name, schema: AthleteSchema },
       { name: Checkin.name, schema: CheckinSchema },
+      { name: CompletedSession.name, schema: CompletedSessionSchema },
       { name: PlannedSession.name, schema: PlannedSessionSchema },
     ]),
     AlertsModule,

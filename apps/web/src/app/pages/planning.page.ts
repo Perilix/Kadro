@@ -1,9 +1,13 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import type { AthleteListItem, Page, PlannedSession, SessionTemplate } from '@kadro/shared';
 import { ApiClient } from '../core/api-client';
+import { AvatarComponent } from '../ui/avatar.component';
+import { IconComponent } from '../ui/icon.component';
+import { FORM_LEVELS } from '../ui/status-pill.component';
 
-const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
 function mondayOf(date: Date): Date {
   const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
@@ -23,41 +27,39 @@ function addDays(date: Date, days: number): Date {
 
 @Component({
   selector: 'app-planning-page',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink, AvatarComponent, IconComponent],
   template: `
-    <div class="head">
-      <h1>Planning</h1>
-      <div class="week-nav">
-        <button class="btn btn-ghost" type="button" (click)="shiftWeek(-1)">←</button>
-        <span class="range">{{ weekStartLabel() }} – {{ weekEndLabel() }}</span>
-        <button class="btn btn-ghost" type="button" (click)="shiftWeek(1)">→</button>
-        <button class="btn btn-ghost" type="button" (click)="today()">Aujourd'hui</button>
+    <header class="row head">
+      <div class="head-txt">
+        <h1>Planning</h1>
+        <div class="muted sub">Semaine du {{ weekStartLabel() }} · {{ doneCount() }} / {{ sessions().length }} séances réalisées</div>
       </div>
-      <button class="btn" type="button" (click)="assignOpen.set(!assignOpen())">Assigner une séance</button>
-    </div>
+      <div class="row nav-week">
+        <button class="icon-btn" type="button" (click)="shiftWeek(-1)"><ui-icon name="chevronL" [size]="18" /></button>
+        <button class="btn" type="button" (click)="goToday()">Aujourd'hui</button>
+        <button class="icon-btn" type="button" (click)="shiftWeek(1)"><ui-icon name="chevron" [size]="18" /></button>
+      </div>
+      <button class="btn" type="button" (click)="assignOpen.set(!assignOpen())"><ui-icon name="layers" [size]="18" />Assigner un modèle</button>
+      <a class="btn primary" routerLink="/bibliotheque/nouvelle"><ui-icon name="plus" [size]="18" [sw]="2" />Nouvelle séance</a>
+    </header>
 
     @if (assignOpen()) {
       <section class="card assign">
-        <h2>Assigner une séance</h2>
-        <div class="assign-row">
-          <div>
-            <label class="label">Modèle</label>
-            <select class="input" [(ngModel)]="assignTemplateId">
-              <option value="">Choisir…</option>
-              @for (t of templates(); track t.id) {
-                <option [value]="t.id">{{ t.name }} ({{ t.type === 'run' ? 'course' : 'renfo' }})</option>
-              }
-            </select>
-          </div>
-          <div>
-            <label class="label">Date</label>
-            <input class="input" type="date" [(ngModel)]="assignDate" />
-          </div>
+        <div class="row a-row">
+          <select class="input a-tpl" [(ngModel)]="assignTemplateId">
+            <option value="">Choisir un modèle…</option>
+            @for (t of templates(); track t.id) {
+              <option [value]="t.id">{{ t.name }} ({{ t.type === 'run' ? 'course' : 'renfo' }})</option>
+            }
+          </select>
+          <input class="input a-date" type="date" [(ngModel)]="assignDate" />
+          <button class="btn primary" type="button" [disabled]="!canAssign() || busy()" (click)="assign()">
+            Assigner à {{ assignAthletes().size }} athlète{{ assignAthletes().size > 1 ? 's' : '' }}
+          </button>
         </div>
-        <label class="label">Athlètes</label>
-        <div class="athlete-picks">
+        <div class="row picks">
           @for (a of roster(); track a.id) {
-            <label class="pick">
+            <label class="pick row">
               <input type="checkbox" [checked]="assignAthletes().has(a.id)" (change)="toggleAthlete(a.id)" />
               {{ a.firstName }} {{ a.lastName }}
             </label>
@@ -66,63 +68,102 @@ function addDays(date: Date, days: number): Date {
         @if (assignError()) {
           <p class="error">{{ assignError() }}</p>
         }
-        <div class="assign-actions">
-          <button class="btn" type="button" [disabled]="assignBusy()" (click)="assign()">
-            Assigner à {{ assignAthletes().size }} athlète{{ assignAthletes().size > 1 ? 's' : '' }}
-          </button>
-        </div>
       </section>
     }
 
-    <div class="week">
-      @for (day of days(); track day.date) {
-        <div class="day" [class.today]="day.isToday">
-          <div class="day-head">
-            <span class="day-name">{{ day.label }}</span>
-            <span class="day-date muted">{{ day.dayOfMonth }}</span>
+    <section class="card grid-card">
+      <div class="matrix head-row">
+        <div class="corner"></div>
+        @for (day of days(); track day.date) {
+          <div class="day-head" [class.today-col]="day.today">
+            <span class="d-name">{{ day.label }}</span> <span class="num">{{ day.dayOfMonth }}</span>
+            @if (day.today) {
+              <span class="pill accent today-pill">Aujourd'hui</span>
+            }
           </div>
-          @for (s of day.sessions; track s.id) {
-            <div class="session" [class.done]="s.status === 'completed'" [class.missed]="s.status === 'missed'">
-              <div class="s-name">{{ s.name }}</div>
-              <div class="s-meta muted">
-                {{ athleteName(s.athleteId) }}
-                @if (s.status === 'completed') {
-                  · réalisée
-                } @else if (s.status === 'missed') {
-                  · manquée
-                }
-              </div>
-              <button class="x" type="button" (click)="remove(s)">×</button>
+        }
+      </div>
+      @for (a of roster(); track a.id) {
+        <div class="matrix body-row">
+          <a class="row who" [routerLink]="['/athletes', a.id]">
+            <ui-avatar [name]="a.firstName + ' ' + a.lastName" [size]="30" />
+            <div class="who-txt">
+              <div class="ellip who-name">{{ a.firstName }} {{ a.lastName }}</div>
+              <div class="row who-lv"><span class="dot sm" [style.background]="lvColor(a.formStatus)"></span>{{ lvLabel(a.formStatus) }}</div>
+            </div>
+          </a>
+          @for (day of days(); track day.date) {
+            <div class="cell" [class.today-col]="day.today">
+              @for (s of cellSessions(a.id, day.date); track s.id) {
+                <div class="chip row" [class]="'chip row st-' + chipState(s, day)">
+                  @if (s.status === 'completed') {
+                    <ui-icon name="check" [size]="13" [sw]="2.25" style="color: var(--good)" />
+                  } @else if (s.status === 'missed') {
+                    <ui-icon name="x" [size]="13" [sw]="2.25" style="color: var(--bad)" />
+                  } @else {
+                    <ui-icon [name]="s.type === 'strength' ? 'dumbbell' : 'run'" [size]="13" />
+                  }
+                  <span class="ellip">{{ s.name }}</span>
+                  @if (s.status === 'planned') {
+                    <button class="chip-x" type="button" title="Supprimer" (click)="remove(s)">×</button>
+                  }
+                </div>
+              }
             </div>
           }
         </div>
       }
-    </div>
+      @if (roster().length === 0) {
+        <p class="muted empty">Vos athlètes apparaîtront ici dès qu'ils auront rejoint l'équipe.</p>
+      }
+      <div class="row legend">
+        <span class="row lg"><span class="sw st-completed"><ui-icon name="check" [size]="10" [sw]="2.5" style="color: var(--good)" /></span>Réalisée</span>
+        <span class="row lg"><span class="sw st-today"></span>Aujourd'hui</span>
+        <span class="row lg"><span class="sw st-planned"></span>Prévue</span>
+        <span class="row lg"><span class="sw st-missed"></span>Manquée</span>
+      </div>
+    </section>
   `,
   styles: `
-    .head { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-    .head h1 { margin: 0; flex: 1; }
-    .week-nav { display: flex; align-items: center; gap: 8px; }
-    .week-nav .btn { padding: 6px 10px; }
-    .range { font-weight: 600; font-variant-numeric: tabular-nums; }
-    .assign { margin-bottom: 16px; }
-    .assign-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
-    .athlete-picks { display: flex; flex-wrap: wrap; gap: 10px; }
-    .pick { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; border: 1px solid var(--line-strong); border-radius: var(--radius-control); padding: 7px 10px; cursor: pointer; }
-    .assign-actions { margin-top: 14px; display: flex; justify-content: flex-end; }
-    .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-    .day { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 10px; min-height: 180px; }
-    .day.today { border-color: var(--accent); }
-    .day-head { display: flex; justify-content: space-between; margin-bottom: 8px; }
-    .day-name { font-size: 12px; font-weight: 600; }
-    .day-date { font-size: 12px; }
-    .session { position: relative; background: var(--surface2); border: 1px solid var(--line); border-radius: var(--radius-control); padding: 8px; margin-bottom: 6px; }
-    .session.done { border-left: 3px solid var(--good); }
-    .session.missed { border-left: 3px solid var(--bad); }
-    .s-name { font-size: 12px; font-weight: 600; }
-    .s-meta { font-size: 11px; }
-    .x { position: absolute; top: 4px; right: 6px; background: none; border: none; color: var(--ink3); cursor: pointer; font-size: 13px; padding: 0; }
-    .x:hover { color: var(--bad); }
+    .head { gap: 12px; }
+    .head-txt { flex: 1 1 auto; }
+    .sub { margin-top: 4px; }
+    .nav-week { gap: 4px; }
+    .assign { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+    .a-row { gap: 10px; }
+    .a-tpl { max-width: 340px; }
+    .a-date { max-width: 170px; }
+    .picks { gap: 10px; flex-wrap: wrap; }
+    .pick { gap: 6px; font-size: 13px; border: 1px solid var(--line-strong); border-radius: 10px; padding: 7px 10px; cursor: pointer; }
+    .grid-card { overflow: hidden; display: flex; flex-direction: column; }
+    .matrix { display: grid; grid-template-columns: 200px repeat(7, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
+    .head-row { background: var(--surface2); }
+    .corner { padding: 10px 16px; }
+    .day-head { padding: 10px; font-size: 12.5px; border-left: 1px solid var(--line); color: var(--ink2); }
+    .day-head.today-col { color: var(--accent-ink); }
+    .d-name { font-weight: 600; }
+    .today-pill { margin-left: 8px; height: 18px; padding: 0 6px; font-size: 10.5px; }
+    .body-row { min-height: 68px; }
+    .who { gap: 10px; padding: 8px 16px; color: var(--ink); }
+    .who-txt { line-height: 1.25; min-width: 0; }
+    .who-name { font-weight: 500; font-size: 13.5px; }
+    .who-lv { gap: 5px; font-size: 11.5px; color: var(--ink3); }
+    .dot.sm { width: 7px; height: 7px; }
+    .cell { padding: 8px; border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; justify-content: center; min-width: 0; }
+    .cell.today-col { background: var(--surface2); }
+    .chip { gap: 6px; padding: 7px 8px; border-radius: 8px; font-size: 11.5px; font-weight: 500; min-width: 0; position: relative; background: var(--surface); border: 1px solid var(--line); color: var(--ink); }
+    .chip.st-planned { border-style: dashed; border-color: var(--line-strong); color: var(--ink2); }
+    .chip.st-today { background: var(--accent-soft); border: 1px solid var(--accent); color: var(--accent-ink); }
+    .chip.st-missed { background: var(--bad-soft); border-color: var(--bad-soft); color: var(--bad); }
+    .chip-x { position: absolute; top: 2px; right: 4px; background: none; border: none; color: inherit; opacity: 0; cursor: pointer; font-size: 13px; padding: 0; }
+    .chip:hover .chip-x { opacity: 0.7; }
+    .legend { gap: 18px; padding: 10px 16px; }
+    .lg { gap: 6px; font-size: 12px; color: var(--ink2); }
+    .sw { width: 14px; height: 14px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface); border: 1px solid var(--line); }
+    .sw.st-today { background: var(--accent-soft); border-color: var(--accent); }
+    .sw.st-planned { border-style: dashed; border-color: var(--line-strong); }
+    .sw.st-missed { background: var(--bad-soft); border-color: var(--bad-soft); }
+    .empty { padding: 16px; margin: 0; font-size: 13px; }
   `,
 })
 export class PlanningPage implements OnInit {
@@ -132,35 +173,30 @@ export class PlanningPage implements OnInit {
   readonly sessions = signal<PlannedSession[]>([]);
   readonly roster = signal<AthleteListItem[]>([]);
   readonly templates = signal<SessionTemplate[]>([]);
-
   readonly assignOpen = signal(false);
   readonly assignAthletes = signal(new Set<string>());
   readonly assignError = signal<string | null>(null);
-  readonly assignBusy = signal(false);
+  readonly busy = signal(false);
   assignTemplateId = '';
   assignDate = ymd(new Date());
 
   readonly days = computed(() => {
     const start = this.weekStart();
-    const todayYmd = ymd(new Date());
-    return Array.from({ length: 7 }, (_, i) => {
+    const today = ymd(new Date());
+    return DAY_NAMES.map((label, i) => {
       const date = ymd(addDays(start, i));
-      return {
-        date,
-        label: DAY_LABELS[i],
-        dayOfMonth: Number(date.slice(8, 10)),
-        isToday: date === todayYmd,
-        sessions: this.sessions().filter((s) => s.date === date),
-      };
+      return { label, date, dayOfMonth: Number(date.slice(8, 10)), today: date === today };
     });
   });
 
-  readonly weekStartLabel = computed(() => frDate(this.weekStart()));
-  readonly weekEndLabel = computed(() => frDate(addDays(this.weekStart(), 6)));
+  readonly doneCount = computed(() => this.sessions().filter((s) => s.status === 'completed').length);
+  readonly weekStartLabel = computed(() =>
+    new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(this.weekStart()),
+  );
 
   async ngOnInit(): Promise<void> {
     const [roster, templates] = await Promise.all([
-      this.api.get<Page<AthleteListItem>>('/athletes'),
+      this.api.get<Page<AthleteListItem>>('/athletes?limit=100&sort=name'),
       this.api.get<SessionTemplate[]>('/templates'),
     ]);
     this.roster.set(roster.items);
@@ -168,9 +204,25 @@ export class PlanningPage implements OnInit {
     await this.loadWeek();
   }
 
-  athleteName(athleteId: string): string {
-    const a = this.roster().find((x) => x.id === athleteId);
-    return a ? `${a.firstName} ${a.lastName}` : '';
+  cellSessions(athleteId: string, date: string): PlannedSession[] {
+    return this.sessions().filter((s) => s.athleteId === athleteId && s.date === date);
+  }
+
+  chipState(s: PlannedSession, day: { today: boolean }): string {
+    if (s.status === 'planned' && day.today) return 'today';
+    return s.status;
+  }
+
+  lvColor(level: string): string {
+    return FORM_LEVELS[level]?.color ?? 'var(--ink3)';
+  }
+
+  lvLabel(level: string): string {
+    return FORM_LEVELS[level]?.label ?? '';
+  }
+
+  canAssign(): boolean {
+    return Boolean(this.assignTemplateId && this.assignDate && this.assignAthletes().size > 0);
   }
 
   async shiftWeek(delta: number): Promise<void> {
@@ -178,7 +230,7 @@ export class PlanningPage implements OnInit {
     await this.loadWeek();
   }
 
-  async today(): Promise<void> {
+  async goToday(): Promise<void> {
     this.weekStart.set(mondayOf(new Date()));
     await this.loadWeek();
   }
@@ -192,11 +244,7 @@ export class PlanningPage implements OnInit {
 
   async assign(): Promise<void> {
     this.assignError.set(null);
-    if (!this.assignTemplateId || this.assignAthletes().size === 0 || !this.assignDate) {
-      this.assignError.set('Choisissez un modèle, une date et au moins un athlète.');
-      return;
-    }
-    this.assignBusy.set(true);
+    this.busy.set(true);
     try {
       await this.api.post('/sessions/assign', {
         session: { templateId: this.assignTemplateId },
@@ -209,13 +257,13 @@ export class PlanningPage implements OnInit {
     } catch {
       this.assignError.set('Assignation impossible. Réessayez.');
     } finally {
-      this.assignBusy.set(false);
+      this.busy.set(false);
     }
   }
 
   async remove(session: PlannedSession): Promise<void> {
     await this.api.delete(`/sessions/${session.id}?scope=one`);
-    await this.loadWeek();
+    this.sessions.update((list) => list.filter((s) => s.id !== session.id));
   }
 
   private async loadWeek(): Promise<void> {
@@ -223,8 +271,4 @@ export class PlanningPage implements OnInit {
     const to = ymd(addDays(this.weekStart(), 6));
     this.sessions.set(await this.api.get<PlannedSession[]>(`/sessions?from=${from}&to=${to}`));
   }
-}
-
-function frDate(date: Date): string {
-  return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(date);
 }

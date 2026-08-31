@@ -1,14 +1,19 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import type {
+  AthleteListItem,
   Billing,
   CheckoutUrl,
+  Group,
   Invitation,
   InviteCodeInfo,
+  Page,
   Team,
 } from '@kadro/shared';
 import { ApiClient, ApiError } from '../core/api-client';
+import { AvatarComponent } from '../ui/avatar.component';
+import { IconComponent } from '../ui/icon.component';
 
 const PLAN_LABELS: Record<string, string> = {
   trial: 'Essai gratuit',
@@ -18,173 +23,214 @@ const PLAN_LABELS: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  trialing: "En période d'essai",
-  active: 'Actif',
-  past_due: 'Paiement requis',
-  canceled: 'Résilié',
+  trialing: "en période d'essai",
+  active: 'actif',
+  past_due: 'paiement requis',
+  canceled: 'résilié',
 };
 
 @Component({
   selector: 'app-team-page',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink, AvatarComponent, IconComponent],
   template: `
-    <h1>Équipe & réglages</h1>
-
+    <header class="row head">
+      <div class="head-txt">
+        <h1>Équipe & réglages</h1>
+        <div class="muted sub">Invitations, groupes, abonnement et alertes</div>
+      </div>
+    </header>
     @if (billingNotice()) {
-      <p class="status status-good notice">{{ billingNotice() }}</p>
+      <p class="row notice"><ui-icon name="check" [size]="16" [sw]="2.25" />{{ billingNotice() }}</p>
     }
-
-    <section class="card">
-      <h2>Abonnement</h2>
-      @if (billing(); as b) {
-        <div class="sub-head">
-          <div>
-            <strong>{{ planLabel(b.plan) }}</strong>
-            <span class="status status-{{ b.status === 'active' || b.status === 'trialing' ? 'good' : 'bad' }}">
-              {{ statusLabel(b.status) }}
-            </span>
-          </div>
-          <span class="muted">
-            {{ b.athleteCount }}/{{ b.athleteLimit }} athlètes
-            @if (b.trialEndsAt && b.plan === 'trial') {
-              · essai jusqu'au {{ b.trialEndsAt.slice(0, 10) }}
-            }
-            @if (b.currentPeriodEnd) {
-              · renouvellement le {{ b.currentPeriodEnd.slice(0, 10) }}
-            }
-          </span>
+    <div class="grid">
+      <section class="card pad col gap">
+        <div>
+          <h2>Inviter des athlètes</h2>
+          <div class="muted tiny top2">L'athlète installe l'app, entre le code, et apparaît dans votre liste.</div>
         </div>
-        @if (b.plan !== 'trial' && b.checkoutAvailable) {
-          <button class="btn btn-ghost" type="button" (click)="portal()">Gérer mon abonnement</button>
+        @if (invite(); as info) {
+          <div class="row inv-main">
+            <div class="qr"><ui-icon name="qr" [size]="48" [sw]="1.5" /></div>
+            <div class="col inv-right">
+              <div class="col code-block">
+                <span class="label">Code coach</span>
+                <div class="row code-row">
+                  <span class="num code">{{ info.code }}</span>
+                  <button class="icon-btn sm" type="button" (click)="rotate()" title="Régénérer"><ui-icon name="sync" [size]="15" /></button>
+                </div>
+              </div>
+              <div class="row link-row">
+                <div class="input link-box"><ui-icon name="link" [size]="16" /><span class="ellip">{{ shortUrl(info.joinUrl) }}</span></div>
+                <button class="btn small" type="button" (click)="copy(info.joinUrl)">{{ copied() ? 'Copié ✓' : 'Copier' }}</button>
+              </div>
+            </div>
+          </div>
         }
-        <div class="plans">
-          @for (p of b.amounts; track p.plan) {
-            <div class="plan" [class.current]="p.plan === b.plan">
-              <div class="p-name">{{ planLabel(p.plan) }}</div>
-              <div class="p-price">
-                {{ yearly ? p.yearlyEurHt + ' €/an' : p.monthlyEurHt + ' €/mois' }}
-                <span class="muted ht">HT</span>
-              </div>
-              <div class="muted p-desc">
-                {{ p.athleteLimit }} athlètes{{ p.coachLimit > 1 ? ' · ' + p.coachLimit + ' coachs' : '' }}
-                · +{{ p.extraAthleteEurHt }} €/athlète au-delà
-              </div>
-              @if (b.checkoutAvailable && p.plan !== b.plan) {
-                <button class="btn" type="button" [disabled]="busy()" (click)="checkout(p.plan)">Choisir</button>
+        <form class="row mail-form" (ngSubmit)="sendInvitation()">
+          <input class="input" name="invEmail" type="email" [(ngModel)]="invEmail" placeholder="E-mail de l'athlète" />
+          <button class="btn primary" type="submit" [disabled]="!invEmail.trim()">Inviter</button>
+        </form>
+        @if (invError()) {
+          <p class="error">{{ invError() }}</p>
+        }
+        @for (inv of invitations(); track inv.id) {
+          <div class="row setting">
+            <span class="grow ellip">{{ inv.email }}</span>
+            <span class="muted">{{ inv.status === 'accepted' ? 'A rejoint' : 'En attente' }}</span>
+            @if (inv.status === 'pending') {
+              <button class="btn small" type="button" (click)="remind(inv)">Relancer</button>
+              <button class="icon-btn sm" type="button" (click)="revoke(inv)" title="Révoquer"><ui-icon name="x" [size]="14" /></button>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="card pad">
+        <div class="row card-head"><h2>Groupes</h2></div>
+        @for (g of groups(); track g.id) {
+          <div class="row setting">
+            <div class="grow">
+              <div class="strong">{{ g.name }}</div>
+              <div class="faint tiny">{{ membersOf(g.id).length }} athlète{{ membersOf(g.id).length > 1 ? 's' : '' }}</div>
+            </div>
+            <div class="row stack">
+              @for (m of membersOf(g.id).slice(0, 3); track m.id; let i = $index) {
+                <span class="stacked" [style.margin-left.px]="i ? -8 : 0"><ui-avatar [name]="m.firstName + ' ' + m.lastName" [size]="28" /></span>
               }
             </div>
-          }
-        </div>
-        <label class="toggle">
-          <input type="checkbox" [(ngModel)]="yearly" />
-          Facturation annuelle <span class="badge">2 mois offerts</span>
-        </label>
-        @if (!b.checkoutAvailable) {
-          <p class="muted small">Le paiement en ligne sera activé prochainement — l'essai continue en attendant.</p>
+            <button class="icon-btn sm" type="button" (click)="deleteGroup(g)" title="Supprimer"><ui-icon name="x" [size]="14" /></button>
+          </div>
         }
-      } @else {
-        <p class="muted">Chargement…</p>
-      }
-    </section>
+        <form class="row mail-form top" (ngSubmit)="createGroup()">
+          <input class="input" name="groupDraft" [(ngModel)]="groupDraft" placeholder="Nouveau groupe (Marathon, Trail…)" />
+          <button class="btn" type="submit" [disabled]="!groupDraft.trim()">Créer</button>
+        </form>
+        <p class="faint tiny top2">Rattachez les athlètes à un groupe depuis leur fiche.</p>
+      </section>
 
-    <section class="card">
-      <h2>Inviter des athlètes</h2>
-      @if (invite(); as info) {
-        <div class="code-row">
-          <span>Code d'équipe : <span class="badge big">{{ info.code }}</span></span>
-          <button class="btn btn-ghost" type="button" (click)="copy(info.joinUrl)">
-            {{ copied() ? 'Lien copié ✓' : "Copier le lien d'invitation" }}
-          </button>
-          <button class="btn btn-ghost" type="button" (click)="rotate()">Régénérer le code</button>
-        </div>
-      }
-      <form class="inv-form" (ngSubmit)="sendInvitation()">
-        <input class="input" name="invEmail" type="email" [(ngModel)]="invEmail" placeholder="E-mail de l'athlète" />
-        <button class="btn" type="submit" [disabled]="!invEmail.trim()">Inviter par e-mail</button>
-      </form>
-      @if (invError()) {
-        <p class="error">{{ invError() }}</p>
-      }
-      @for (inv of invitations(); track inv.id) {
-        <div class="inv">
-          <span class="i-mail">{{ inv.email }}</span>
-          <span class="status status-{{ inv.status === 'accepted' ? 'good' : 'none' }}">
-            {{ inv.status === 'accepted' ? 'A rejoint' : 'En attente' }}
-          </span>
-          @if (inv.status === 'pending') {
-            <button class="link-btn" type="button" (click)="remind(inv)">Relancer</button>
-            <button class="link-btn danger" type="button" (click)="revoke(inv)">Révoquer</button>
+      <section class="card pad">
+        <div class="row card-head"><h2>Abonnement</h2>
+          @if (billing(); as b) {
+            <span class="pill accent">{{ planLabel(b.plan) }}</span>
           }
         </div>
-      }
-    </section>
-
-    <section class="card">
-      <h2>Réglages</h2>
-      @if (team(); as t) {
-        <label class="label">Nom de l'équipe</label>
-        <input class="input settings-input" [(ngModel)]="draftName" />
-        <div class="th-grid">
-          <div>
-            <label class="label">Jours « rouges » consécutifs avant alerte</label>
-            <input class="input" type="number" min="1" max="14" [(ngModel)]="draftThresholds.redFeelingStreakDays" />
+        @if (billing(); as b) {
+          <div class="row metrics">
+            <div class="metric col"><span class="faint tiny">Athlètes</span><span class="num m-val">{{ b.athleteCount }} <span class="of">/ {{ b.athleteLimit }}</span></span></div>
+            <div class="metric col"><span class="faint tiny">Statut</span><span class="m-val">{{ statusLabel(b.status) }}</span></div>
+            <div class="metric col"><span class="faint tiny">{{ b.plan === 'trial' ? "Fin d'essai" : 'Renouvellement' }}</span><span class="num m-val">{{ periodLabel(b) }}</span></div>
           </div>
-          <div>
-            <label class="label">Jours sans activité avant alerte</label>
-            <input class="input" type="number" min="1" max="30" [(ngModel)]="draftThresholds.noActivityDays" />
+          <div class="meter"><div [style.width.%]="usagePct(b)" style="background: var(--ink)"></div></div>
+          <div class="plans">
+            @for (p of b.amounts; track p.plan) {
+              <div class="plan col" [class.current]="p.plan === b.plan">
+                <div class="p-name">{{ planLabel(p.plan) }}</div>
+                <div class="num p-price">{{ yearly ? p.yearlyEurHt + ' €/an' : p.monthlyEurHt + ' €/mois' }} <span class="faint ht">HT</span></div>
+                <div class="faint p-desc">{{ p.athleteLimit }} athlètes{{ p.coachLimit > 1 ? ' · ' + p.coachLimit + ' coachs' : '' }}</div>
+                @if (b.checkoutAvailable && p.plan !== b.plan) {
+                  <button class="btn small" type="button" [disabled]="busy()" (click)="checkout(p.plan)">Choisir</button>
+                }
+              </div>
+            }
           </div>
-          <div>
-            <label class="label">Jours sans check-in avant alerte</label>
-            <input class="input" type="number" min="1" max="30" [(ngModel)]="draftThresholds.noCheckinDays" />
-          </div>
-          <div>
-            <label class="label">Ratio aigu/chronique max</label>
-            <input class="input" type="number" step="0.1" min="0.8" max="2.5" [(ngModel)]="draftThresholds.acuteChronicMax" />
-          </div>
-        </div>
-        <label class="toggle">
-          <input type="checkbox" [(ngModel)]="draftWatchPush.enabled" />
-          Envoyer les séances sur les montres
-        </label>
-        @if (draftWatchPush.enabled) {
-          <label class="label">Heure d'envoi (la veille, heure locale de l'athlète)</label>
-          <input class="input settings-input" type="time" [(ngModel)]="draftWatchPush.sendLocalTime" />
+          <label class="row toggle">
+            <input type="checkbox" [(ngModel)]="yearly" />
+            Facturation annuelle <span class="pill accent">2 mois offerts</span>
+          </label>
+          @if (b.plan !== 'trial' && b.checkoutAvailable) {
+            <button class="btn small top" type="button" (click)="portal()">Gérer mon abonnement · factures, carte</button>
+          }
+          @if (!b.checkoutAvailable) {
+            <p class="faint tiny top2">Le paiement en ligne arrive — l'essai continue en attendant.</p>
+          }
         }
-        <div class="save-row">
-          @if (saved()) {
-            <span class="status status-good">Enregistré</span>
+      </section>
+
+      <section class="card pad">
+        <div class="row card-head"><h2>Alertes & envoi montre</h2></div>
+        @if (team(); as t) {
+          <label class="label">Nom de l'équipe</label>
+          <input class="input field" [(ngModel)]="draftName" />
+          <div class="th-grid">
+            <div><label class="label">Jours « rouges » avant alerte</label><input class="input" type="number" min="1" max="14" [(ngModel)]="draftThresholds.redFeelingStreakDays" /></div>
+            <div><label class="label">Jours sans activité</label><input class="input" type="number" min="1" max="30" [(ngModel)]="draftThresholds.noActivityDays" /></div>
+            <div><label class="label">Jours sans check-in</label><input class="input" type="number" min="1" max="30" [(ngModel)]="draftThresholds.noCheckinDays" /></div>
+            <div><label class="label">Ratio aigu/chronique max</label><input class="input" type="number" step="0.1" min="0.8" max="2.5" [(ngModel)]="draftThresholds.acuteChronicMax" /></div>
+          </div>
+          <label class="row toggle">
+            <input type="checkbox" [(ngModel)]="draftWatchPush.enabled" />
+            Envoyer les séances sur les montres
+          </label>
+          @if (draftWatchPush.enabled) {
+            <div class="row time-row">
+              <span class="muted tiny">La veille à</span>
+              <input class="input time" type="time" [(ngModel)]="draftWatchPush.sendLocalTime" />
+              <span class="muted tiny">heure locale de l'athlète</span>
+            </div>
           }
-          <button class="btn" type="button" [disabled]="busy()" (click)="saveSettings()">Enregistrer</button>
-        </div>
-      }
-    </section>
+          <div class="row setting top">
+            <span class="grow">Intégrations & montres</span>
+            <a class="btn small" routerLink="/integrations">Gérer</a>
+          </div>
+          <div class="row save">
+            @if (saved()) {
+              <span class="row saved"><ui-icon name="check" [size]="15" [sw]="2.25" />Enregistré</span>
+            }
+            <button class="btn primary" type="button" [disabled]="busy()" (click)="saveSettings()">Enregistrer</button>
+          </div>
+        }
+      </section>
+    </div>
   `,
   styles: `
-    section { margin-bottom: 16px; }
-    .notice { margin: 0 0 12px; }
-    .sub-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
-    .sub-head strong { margin-right: 10px; font-size: 16px; }
-    .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0 10px; }
-    .plan { border: 1px solid var(--line); border-radius: var(--radius-control); padding: 14px; display: flex; flex-direction: column; gap: 6px; }
+    .head-txt { flex: 1 1 auto; }
+    .sub { margin-top: 4px; }
+    .notice { gap: 8px; margin: 0; color: var(--good); font-weight: 500; font-size: 13.5px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+    .pad { padding: 18px 20px; }
+    .gap { gap: 14px; }
+    .card-head { gap: 10px; margin-bottom: 10px; }
+    .card-head h2 { flex: 1 1 auto; }
+    .tiny { font-size: 12.5px; }
+    .top2 { margin-top: 2px; }
+    .inv-main { gap: 14px; align-items: flex-start; }
+    .qr { width: 96px; height: 96px; border-radius: 12px; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--ink2); flex: 0 0 auto; }
+    .inv-right { gap: 8px; flex: 1 1 auto; min-width: 0; }
+    .code-block { gap: 4px; }
+    .code-row { gap: 8px; }
+    .code { font-size: 26px; font-weight: 600; letter-spacing: 0.08em; }
+    .icon-btn.sm { width: 32px; height: 32px; border: none; background: transparent; }
+    .icon-btn.sm:hover { color: var(--bad); }
+    .link-row { gap: 8px; }
+    .link-box { flex: 1 1 auto; height: 36px; font-size: 13px; color: var(--ink2); min-width: 0; }
+    .mail-form { gap: 8px; }
+    .mail-form.top { margin-top: 8px; }
+    .setting { gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+    .setting.top { margin-top: 12px; }
+    .grow { flex: 1 1 auto; min-width: 0; }
+    .strong { font-weight: 500; }
+    .stack { flex: 0 0 auto; }
+    .stacked { border: 2px solid var(--surface); border-radius: 99px; display: inline-flex; }
+    .metrics { gap: 16px; padding: 6px 0 12px; }
+    .metric { gap: 3px; flex: 1 1 0; }
+    .m-val { font-size: 17px; font-weight: 600; }
+    .of { font-size: 12px; font-weight: 500; color: var(--ink3); }
+    .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+    .plan { border: 1px solid var(--line); border-radius: 10px; padding: 12px; gap: 4px; }
     .plan.current { border-color: var(--accent); }
-    .p-name { font-weight: 700; }
-    .p-price { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-    .ht { font-size: 12px; font-weight: 400; }
-    .p-desc { font-size: 12px; flex: 1; }
-    .toggle { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-top: 10px; cursor: pointer; }
-    .small { font-size: 12px; margin: 10px 0 0; }
-    .code-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
-    .badge.big { font-size: 14px; padding: 5px 14px; }
-    .inv-form { display: flex; gap: 8px; margin-bottom: 12px; }
-    .inv-form .input { max-width: 300px; }
-    .inv { display: flex; align-items: baseline; gap: 14px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
-    .inv:last-child { border-bottom: none; }
-    .i-mail { flex: 1; }
-    .link-btn { background: none; border: none; color: var(--accent-ink); font-family: inherit; font-size: 12px; cursor: pointer; padding: 0; }
-    .link-btn.danger { color: var(--bad); }
-    .settings-input { max-width: 300px; }
-    .th-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
-    .save-row { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 18px; }
+    .p-name { font-weight: 600; font-size: 13.5px; }
+    .p-price { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+    .ht { font-size: 11px; font-weight: 400; }
+    .p-desc { font-size: 11.5px; flex: 1 1 auto; }
+    .toggle { gap: 8px; font-size: 13.5px; margin-top: 12px; cursor: pointer; }
+    .top { margin-top: 12px; }
+    .field { max-width: 300px; margin-bottom: 6px; }
+    .th-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-top: 10px; }
+    .th-grid .label { display: block; margin-bottom: 4px; }
+    .time-row { gap: 8px; margin-top: 8px; }
+    .time { max-width: 120px; }
+    .save { justify-content: flex-end; gap: 12px; margin-top: 16px; }
+    .saved { gap: 6px; color: var(--good); font-size: 13px; font-weight: 500; }
   `,
 })
 export class TeamPage implements OnInit {
@@ -195,6 +241,8 @@ export class TeamPage implements OnInit {
   readonly team = signal<Team | null>(null);
   readonly invite = signal<InviteCodeInfo | null>(null);
   readonly invitations = signal<Invitation[]>([]);
+  readonly groups = signal<Group[]>([]);
+  readonly roster = signal<AthleteListItem[]>([]);
   readonly busy = signal(false);
   readonly saved = signal(false);
   readonly copied = signal(false);
@@ -203,6 +251,7 @@ export class TeamPage implements OnInit {
 
   yearly = false;
   invEmail = '';
+  groupDraft = '';
   draftName = '';
   draftThresholds = { redFeelingStreakDays: 2, noActivityDays: 3, noCheckinDays: 7, acuteChronicMax: 1.3 };
   draftWatchPush = { enabled: true, sendLocalTime: '20:00' };
@@ -211,16 +260,20 @@ export class TeamPage implements OnInit {
     if (this.route.snapshot.queryParamMap.get('billing') === 'success') {
       this.billingNotice.set('Paiement confirmé — votre abonnement est actif.');
     }
-    const [billing, team, invite, invitations] = await Promise.all([
+    const [billing, team, invite, invitations, groups, roster] = await Promise.all([
       this.api.get<Billing>('/billing'),
       this.api.get<Team>('/team'),
       this.api.get<InviteCodeInfo>('/team/invite-code'),
       this.api.get<Invitation[]>('/team/invitations'),
+      this.api.get<Group[]>('/groups'),
+      this.api.get<Page<AthleteListItem>>('/athletes?limit=100'),
     ]);
     this.billing.set(billing);
     this.team.set(team);
     this.invite.set(invite);
     this.invitations.set(invitations);
+    this.groups.set(groups);
+    this.roster.set(roster.items);
     this.draftName = team.name;
     this.draftThresholds = {
       redFeelingStreakDays: team.alertDefaults.redFeelingStreakDays,
@@ -228,10 +281,7 @@ export class TeamPage implements OnInit {
       noCheckinDays: team.alertDefaults.noCheckinDays,
       acuteChronicMax: team.alertDefaults.acuteChronicMax,
     };
-    this.draftWatchPush = {
-      enabled: team.watchPush.enabled,
-      sendLocalTime: team.watchPush.sendLocalTime,
-    };
+    this.draftWatchPush = { enabled: team.watchPush.enabled, sendLocalTime: team.watchPush.sendLocalTime };
   }
 
   planLabel(plan: string): string {
@@ -240,6 +290,24 @@ export class TeamPage implements OnInit {
 
   statusLabel(status: string): string {
     return STATUS_LABELS[status] ?? status;
+  }
+
+  periodLabel(b: Billing): string {
+    const iso = b.plan === 'trial' ? b.trialEndsAt : b.currentPeriodEnd;
+    if (!iso) return '—';
+    return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(new Date(iso));
+  }
+
+  usagePct(b: Billing): number {
+    return Math.min(100, Math.round((b.athleteCount / Math.max(1, b.athleteLimit)) * 100));
+  }
+
+  shortUrl(url: string): string {
+    return url.replace(/^https?:\/\//, '');
+  }
+
+  membersOf(groupId: string): AthleteListItem[] {
+    return this.roster().filter((a) => a.groupIds.includes(groupId));
   }
 
   async checkout(plan: 'solo' | 'coach' | 'structure'): Promise<void> {
@@ -273,16 +341,14 @@ export class TeamPage implements OnInit {
   async sendInvitation(): Promise<void> {
     this.invError.set(null);
     try {
-      const invitation = await this.api.post<Invitation>('/team/invitations', {
-        email: this.invEmail.trim(),
-      });
+      const invitation = await this.api.post<Invitation>('/team/invitations', { email: this.invEmail.trim() });
       this.invitations.update((list) => [invitation, ...list]);
       this.invEmail = '';
     } catch (err) {
       this.invError.set(
         err instanceof ApiError && err.code === 'invite.already_sent'
           ? 'Une invitation existe déjà pour cet e-mail.'
-          : 'Invitation impossible. Vérifiez l’adresse.',
+          : "Invitation impossible. Vérifiez l'adresse.",
       );
     }
   }
@@ -296,6 +362,19 @@ export class TeamPage implements OnInit {
     this.invitations.update((list) => list.filter((i) => i.id !== invitation.id));
   }
 
+  async createGroup(): Promise<void> {
+    const name = this.groupDraft.trim();
+    if (!name) return;
+    const group = await this.api.post<Group>('/groups', { name });
+    this.groups.update((list) => [...list, group]);
+    this.groupDraft = '';
+  }
+
+  async deleteGroup(group: Group): Promise<void> {
+    await this.api.delete(`/groups/${group.id}`);
+    this.groups.update((list) => list.filter((g) => g.id !== group.id));
+  }
+
   async saveSettings(): Promise<void> {
     this.busy.set(true);
     try {
@@ -307,10 +386,7 @@ export class TeamPage implements OnInit {
           noCheckinDays: Number(this.draftThresholds.noCheckinDays),
           acuteChronicMax: Number(this.draftThresholds.acuteChronicMax),
         },
-        watchPush: {
-          enabled: this.draftWatchPush.enabled,
-          sendLocalTime: this.draftWatchPush.sendLocalTime,
-        },
+        watchPush: { enabled: this.draftWatchPush.enabled, sendLocalTime: this.draftWatchPush.sendLocalTime },
       });
       this.team.set(team);
       this.saved.set(true);

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import type { CoachDashboard, TodayItem } from '@kadro/shared';
+import { CompletedSession } from '../activities/completed-session.schema';
 import { Athlete } from '../athletes/athlete.schema';
 import { AlertsService } from '../alerts/alerts.service';
 import { Checkin } from '../checkins/checkin.schema';
@@ -13,6 +14,7 @@ export class DashboardService {
     @InjectModel(Athlete.name) private readonly athletes: Model<Athlete>,
     @InjectModel(PlannedSession.name) private readonly sessions: Model<PlannedSession>,
     @InjectModel(Checkin.name) private readonly checkins: Model<Checkin>,
+    @InjectModel(CompletedSession.name) private readonly completed: Model<CompletedSession>,
     private readonly alerts: AlertsService,
   ) {}
 
@@ -97,9 +99,35 @@ export class DashboardService {
         openAlerts,
       },
       today: todayItems,
-      weeklyVolumeKm: [],
+      weeklyVolumeKm: await this.teamWeeklyVolume(teamId),
     };
   }
+
+  private async teamWeeklyVolume(teamId: Types.ObjectId): Promise<{ week: string; km: number }[]> {
+    const since = new Date(Date.now() - 8 * 7 * 24 * 3600 * 1000);
+    const docs = await this.completed
+      .find({ teamId, startedAt: { $gte: since }, sport: { $in: ['run', 'trail'] } }, { startedAt: 1, distanceM: 1 })
+      .exec();
+    const byWeek = new Map<string, number>();
+    for (const doc of docs) {
+      const week = isoWeek(doc.startedAt);
+      byWeek.set(week, (byWeek.get(week) ?? 0) + (doc.distanceM ?? 0));
+    }
+    const result: { week: string; km: number }[] = [];
+    for (let i = 7; i >= 0; i -= 1) {
+      const week = isoWeek(new Date(Date.now() - i * 7 * 24 * 3600 * 1000));
+      result.push({ week, km: Math.round((byWeek.get(week) ?? 0) / 1000) });
+    }
+    return result;
+  }
+}
+
+function isoWeek(date: Date): string {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `S${String(week).padStart(2, '0')}`;
 }
 
 function currentWeek(today: string): { weekStart: string; weekEnd: string } {
