@@ -35,6 +35,9 @@ export class User {
   @Prop({ type: Object, default: { push: true, email: true, checkinReminder: null } })
   notificationPrefs!: NotificationPrefs;
 
+  @Prop({ type: [Object], default: [] })
+  pushTokens!: { expoToken: string; platform: 'ios' | 'android'; addedAt: Date }[];
+
   @Prop({ type: String, default: null })
   refreshTokenHash!: string | null;
 

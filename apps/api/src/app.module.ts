@@ -13,6 +13,9 @@ import { LibraryModule } from './library/library.module';
 import { PlanningModule } from './planning/planning.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { CheckinsModule } from './checkins/checkins.module';
+import { RealtimeModule } from './realtime/realtime.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -31,6 +34,9 @@ import { CheckinsModule } from './checkins/checkins.module';
     PlanningModule,
     AlertsModule,
     CheckinsModule,
+    RealtimeModule,
+    NotificationsModule,
+    ChatModule,
     AuthModule,
     InviteModule,
   ],

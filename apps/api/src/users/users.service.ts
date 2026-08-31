@@ -23,6 +23,19 @@ export class UsersService {
     await this.model.updateOne({ _id: userId }, { $set: { refreshTokenHash: hash } }).exec();
   }
 
+  async addPushToken(
+    userId: Types.ObjectId,
+    expoToken: string,
+    platform: 'ios' | 'android',
+  ): Promise<void> {
+    await this.model
+      .updateOne({ _id: userId }, { $pull: { pushTokens: { expoToken } } })
+      .exec();
+    await this.model
+      .updateOne({ _id: userId }, { $push: { pushTokens: { expoToken, platform, addedAt: new Date() } } })
+      .exec();
+  }
+
   async touchLogin(userId: Types.ObjectId): Promise<void> {
     await this.model.updateOne({ _id: userId }, { $set: { lastLoginAt: new Date() } }).exec();
   }
