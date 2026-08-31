@@ -21,3 +21,13 @@ export type Sport = z.infer<typeof zSport>;
 
 export const zFormStatus = z.enum(['good', 'warn', 'bad', 'none']);
 export type FormStatus = z.infer<typeof zFormStatus>;
+
+export const zIsoInstant = z.string().datetime();
+
+export function zPage<S extends z.ZodTypeAny>(item: S) {
+  return z.object({ items: z.array(item), nextCursor: z.string().nullable() });
+}
+export interface Page<T> {
+  items: T[];
+  nextCursor: string | null;
+}

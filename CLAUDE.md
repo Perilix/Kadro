@@ -6,8 +6,8 @@ Plateforme de suivi d'athlètes pour coachs (course à pied + renforcement muscu
 
 - **Maquette terminée** (64 écrans) : `design/maquette/dist/kadro-canvas.html` (canvas), `kadro-prototype.html` (prototype navigable), `kadro-vs-nolio-truecoach.html` (étude de marché). Sources générées par `design/maquette/src/build.mjs` (`node build.mjs` puis `node proto.mjs`).
 - **Schéma de données validé** : `docs/SCHEMA.md` (22 collections) + contrat d'API `docs/API.md`. Toute évolution de modèle passe par ces docs d'abord.
-- **Monorepo en place** (pnpm workspaces) : `apps/api` (NestJS — auth JWT, invitation par code, santé), `packages/shared` (DTOs zod + règles métier testées), `packages/tokens` (généré depuis `design/maquette/src/lib.mjs`, ne pas éditer `dist/`). `apps/web` et `apps/mobile` n'existent pas encore.
-- Déploiement : `render.yaml` (blueprint) ; comptes et mise en route : `docs/SETUP.md`.
+- **Monorepo en place** (pnpm workspaces) : `apps/api` (NestJS — auth JWT, invitation par code, santé), `apps/web` (squelette Angular 20, page « bientôt », tokens branchés), `packages/shared` (DTOs zod + règles métier testées), `packages/tokens` (généré depuis `design/maquette/src/lib.mjs`, ne pas éditer `dist/`). `apps/mobile` n'existe pas encore.
+- **Déployé sur Render** (blueprint `render.yaml`, région Frankfurt) : `kadro-api` (Docker — `apps/api/Dockerfile`, contexte racine) sur https://kadro-api.onrender.com (santé : `/v1/health`) et `kadro-web` (statique). Base : MongoDB Atlas (cluster0, Network Access ouvert 0.0.0.0/0). Node figé par `.node-version` (le build statique Render prend la dernière version sinon ; `corepack enable` y échoue — pnpm s'installe via npm). Comptes et mise en route : `docs/SETUP.md`.
 - Décisions et contexte complet : `docs/DECISIONS.md`. Lis-le avant de proposer quoi que ce soit.
 
 ## Stack décidée
@@ -29,6 +29,6 @@ Plateforme de suivi d'athlètes pour coachs (course à pied + renforcement muscu
 
 ## Conventions
 
-- Français dans l'UI et les commits ; code et identifiants en anglais.
+- Français dans l'UI ; code et identifiants en anglais ; commits en anglais au format conventional commits (`feat(scope): detail`). Pas de commentaires dans le code.
 - Coach de démo : Marc ; athlète de démo : Léa Martin. Code coach d'exemple : `KDR-7K2M`. appId : `com.kadro.app`. Domaines : `kadro.app`, `kadro-app.com`.
 - Ne pas réintroduire quoi que ce soit de Trainwise (marque, TrainCoins, IA génératrice de plans).

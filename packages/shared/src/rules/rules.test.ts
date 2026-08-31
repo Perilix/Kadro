@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { formatPace, formatDuration, hrZonesFromMax, paceRange, paceSecPerKm, targetTimeSec } from './pace';
+import {
+  formatPace,
+  formatDuration,
+  hrZonesFromMax,
+  paceRange,
+  paceSecPerKm,
+  paceTable,
+  PACE_ZONES,
+  targetTimeSec,
+} from './pace';
 import { epley1Rm, loadFromPctRm, tonnageKg } from './strength';
 import { acuteChronicRatio, sessionLoadUa } from './load';
 import { checkinLevel } from './checkin';
@@ -26,6 +35,14 @@ describe('VMA → allures (les chiffres de la maquette)', () => {
     expect(zones).toHaveLength(5);
     expect(zones[4]?.minBpm).toBe(179);
     expect(zones[4]?.maxBpm).toBe(192);
+  });
+  it('table d’allures de Léa (VMA 16,5) : une ligne par zone, du footing au VMA', () => {
+    const rows = paceTable(16.5);
+    expect(rows.map((r) => r.key)).toEqual(PACE_ZONES.map((z) => z.key));
+    const threshold = rows.find((r) => r.key === 'threshold');
+    expect(formatPace(threshold!.slowSecPerKm)).toBe('4:17 /km');
+    expect(formatPace(threshold!.fastSecPerKm)).toBe('4:02 /km');
+    for (const r of rows) expect(r.fastSecPerKm).toBeLessThan(r.slowSecPerKm);
   });
   it('rejette les entrées invalides', () => {
     expect(() => paceSecPerKm(0, 100)).toThrow(RangeError);

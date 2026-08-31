@@ -44,6 +44,31 @@ export function formatPace(secPerKm: number): string {
   return `${formatDuration(secPerKm)} /km`;
 }
 
+export type PaceZoneKey = 'recovery' | 'easy' | 'marathon' | 'threshold' | 'vma';
+
+export interface PaceZoneDef {
+  key: PaceZoneKey;
+  minPct: number;
+  maxPct: number;
+}
+
+export const PACE_ZONES: readonly PaceZoneDef[] = [
+  { key: 'recovery', minPct: 55, maxPct: 65 },
+  { key: 'easy', minPct: 65, maxPct: 75 },
+  { key: 'marathon', minPct: 78, maxPct: 84 },
+  { key: 'threshold', minPct: 85, maxPct: 90 },
+  { key: 'vma', minPct: 95, maxPct: 105 },
+];
+
+export interface PaceTableRow extends PaceZoneDef, PaceRange {}
+
+export function paceTable(vmaKmh: number): PaceTableRow[] {
+  return PACE_ZONES.map((zone) => ({
+    ...zone,
+    ...paceRange(vmaKmh, zone.minPct, zone.maxPct),
+  }));
+}
+
 export interface HrZone {
   zone: 1 | 2 | 3 | 4 | 5;
   minBpm: number;

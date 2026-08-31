@@ -8,6 +8,8 @@ import { InviteModule } from './invite/invite.module';
 import { UsersModule } from './users/users.module';
 import { TeamsModule } from './teams/teams.module';
 import { AthletesModule } from './athletes/athletes.module';
+import { GroupsModule } from './groups/groups.module';
+import { LibraryModule } from './library/library.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { AthletesModule } from './athletes/athletes.module';
     UsersModule,
     TeamsModule,
     AthletesModule,
+    GroupsModule,
+    LibraryModule,
     AuthModule,
     InviteModule,
   ],
