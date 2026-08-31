@@ -19,6 +19,8 @@ export const zEnv = z.object({
   STRAVA_VERIFY_TOKEN: z.string().optional(),
   POLAR_CLIENT_ID: z.string().optional(),
   POLAR_CLIENT_SECRET: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  MAIL_FROM: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_PRICE_SOLO_MONTH: z.string().optional(),

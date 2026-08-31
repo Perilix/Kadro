@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { CheckinToday, PlannedSession, PlannedSessionDetail } from '@kadro/shared';
+import type { ActivityDetail, CheckinToday, PlannedSession, PlannedSessionDetail } from '@kadro/shared';
 import { formatPace } from '@kadro/shared';
 import { api } from '../../lib/api';
 import { radius, useTheme } from '../../lib/theme';
@@ -27,10 +27,15 @@ export default function AujourdhuiScreen() {
   const insets = useSafeAreaInsets();
   const [checkin, setCheckin] = useState<CheckinToday | null>(null);
   const [session, setSession] = useState<PlannedSessionDetail | null>(null);
+  const [activity, setActivity] = useState<ActivityDetail | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [durationMin, setDurationMin] = useState('');
   const [completing, setCompleting] = useState(false);
+  const [rpe, setRpe] = useState<number | null>(null);
+  const [feeling, setFeeling] = useState<number | null>(null);
+  const [comment, setComment] = useState('');
+  const [sendingFeedback, setSendingFeedback] = useState(false);
 
   const load = useCallback(async () => {
     const today = todayYmd();
@@ -39,7 +44,15 @@ export default function AujourdhuiScreen() {
       api.get<PlannedSession[]>(`/sessions?from=${today}&to=${today}`),
     ]);
     setCheckin(checkinToday);
-    setSession(sessions[0] ? await api.get<PlannedSessionDetail>(`/sessions/${sessions[0].id}`) : null);
+    const detail = sessions[0]
+      ? await api.get<PlannedSessionDetail>(`/sessions/${sessions[0].id}`)
+      : null;
+    setSession(detail);
+    setActivity(
+      detail?.completedSessionId
+        ? await api.get<ActivityDetail>(`/activities/${detail.completedSessionId}`).catch(() => null)
+        : null,
+    );
     setLoaded(true);
   }, []);
 
@@ -65,6 +78,24 @@ export default function AujourdhuiScreen() {
       await load();
     } finally {
       setCompleting(false);
+    }
+  };
+
+  const sendFeedback = async () => {
+    if (!activity || rpe == null || feeling == null) return;
+    setSendingFeedback(true);
+    try {
+      await api.post(`/activities/${activity.id}/feedback`, {
+        rpe,
+        feeling,
+        comment: comment.trim() || null,
+      });
+      setRpe(null);
+      setFeeling(null);
+      setComment('');
+      await load();
+    } finally {
+      setSendingFeedback(false);
     }
   };
 
@@ -160,6 +191,68 @@ export default function AujourdhuiScreen() {
           {session.status === 'completed' ? (
             <View style={{ marginTop: 14 }}>
               <StatusDot level="good" label="Réalisée" />
+              {activity && !activity.feedback ? (
+                <View style={{ marginTop: 14, gap: 10 }}>
+                  <Text style={{ color: t.ink, fontSize: 14, fontWeight: '600' }}>
+                    C'était comment ? (difficulté sur 10)
+                  </Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                      <Pressable
+                        key={n}
+                        onPress={() => setRpe(n)}
+                        style={{
+                          width: 34,
+                          height: 34,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: radius.control,
+                          borderWidth: 1,
+                          borderColor: rpe === n ? t.accent : t.lineStrong,
+                          backgroundColor: rpe === n ? t.accentSoft : t.surface,
+                        }}
+                      >
+                        <Text style={{ color: rpe === n ? t.accentInk : t.ink, fontWeight: '600' }}>{n}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <Text style={{ color: t.ink, fontSize: 14, fontWeight: '600' }}>Sensations</Text>
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    {FEELINGS.map(([value, label]) => (
+                      <Pressable
+                        key={value}
+                        onPress={() => setFeeling(value)}
+                        style={{
+                          flex: 1,
+                          alignItems: 'center',
+                          paddingVertical: 8,
+                          borderRadius: radius.control,
+                          borderWidth: 1,
+                          borderColor: feeling === value ? t.accent : t.lineStrong,
+                          backgroundColor: feeling === value ? t.accentSoft : t.surface,
+                        }}
+                      >
+                        <Text style={{ color: feeling === value ? t.accentInk : t.ink2, fontSize: 10 }}>{label}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <Input
+                    value={comment}
+                    onChangeText={setComment}
+                    placeholder="Un mot pour votre coach (optionnel)"
+                  />
+                  <Button
+                    label="Envoyer mon compte-rendu"
+                    onPress={() => void sendFeedback()}
+                    disabled={sendingFeedback || rpe == null || feeling == null}
+                  />
+                </View>
+              ) : activity?.feedback ? (
+                <Text style={{ color: t.ink2, fontSize: 13, marginTop: 8 }}>
+                  Compte-rendu envoyé — difficulté {activity.feedback.rpe}/10
+                  {session.expectedDifficulty != null ? ` (attendue ${session.expectedDifficulty}/10)` : ''}
+                </Text>
+              ) : null}
             </View>
           ) : (
             <View style={{ marginTop: 14, flexDirection: 'row', gap: 8, alignItems: 'center' }}>

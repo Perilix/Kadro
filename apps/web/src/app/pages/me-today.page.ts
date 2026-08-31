@@ -1,7 +1,14 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import type { AthleteOverview, CheckinToday, Monitoring, PlannedSession, PlannedSessionDetail } from '@kadro/shared';
+import type {
+  ActivityDetail,
+  AthleteOverview,
+  CheckinToday,
+  Monitoring,
+  PlannedSession,
+  PlannedSessionDetail,
+} from '@kadro/shared';
 import { formatPace } from '@kadro/shared';
 import { ApiClient } from '../core/api-client';
 
@@ -81,6 +88,45 @@ function todayYmd(): string {
           }
           @if (s.status === 'completed') {
             <p class="status status-good done">Réalisée</p>
+            @if (activity() && !activity()!.feedback) {
+              <div class="fb">
+                <h3>C'était comment ? <span class="muted">(difficulté sur 10)</span></h3>
+                <div class="chips">
+                  @for (n of scale10; track n) {
+                    <button
+                      class="chip"
+                      type="button"
+                      [class.on]="rpe === n"
+                      (click)="rpe = n"
+                    >{{ n }}</button>
+                  }
+                </div>
+                <h3>Sensations</h3>
+                <div class="chips">
+                  @for (f of feelings; track f[0]) {
+                    <button
+                      class="chip wide"
+                      type="button"
+                      [class.on]="feeling === f[0]"
+                      (click)="feeling = f[0]"
+                    >{{ f[1] }}</button>
+                  }
+                </div>
+                <div class="fb-send">
+                  <input class="input" [(ngModel)]="fbComment" placeholder="Un mot pour votre coach (optionnel)" />
+                  <button class="btn" type="button" [disabled]="rpe == null || feeling == null || busy()" (click)="sendFeedback()">
+                    Envoyer
+                  </button>
+                </div>
+              </div>
+            } @else if (activity()?.feedback; as fb) {
+              <p class="muted fb-done">
+                Compte-rendu envoyé — difficulté {{ fb.rpe }}/10
+                @if (s.expectedDifficulty != null) {
+                  (attendue {{ s.expectedDifficulty }}/10)
+                }
+              </p>
+            }
           } @else {
             <div class="complete">
               <input class="input" type="number" min="1" placeholder="Durée (min)" [(ngModel)]="durationMin" />
@@ -164,6 +210,14 @@ function todayYmd(): string {
     .done { margin: 14px 0 0; }
     .complete { display: flex; gap: 8px; margin-top: 14px; }
     .complete .input { max-width: 140px; }
+    .fb { margin-top: 14px; display: grid; gap: 8px; }
+    .fb h3 { font-size: 13px; margin: 4px 0 0; color: var(--ink2); font-weight: 500; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { min-width: 34px; padding: 7px 10px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius-control); font-family: inherit; font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; }
+    .chip.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+    .chip.wide { flex: 1; font-weight: 500; }
+    .fb-send { display: flex; gap: 8px; margin-top: 6px; }
+    .fb-done { margin: 10px 0 0; font-size: 13px; }
     .cols { display: grid; grid-template-columns: 1fr 280px; gap: 16px; align-items: start; }
     .side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 80px; }
     .side section { margin-bottom: 0; }
@@ -189,9 +243,14 @@ export class MeTodayPage implements OnInit {
   readonly session = signal<PlannedSessionDetail | null>(null);
   readonly overview = signal<AthleteOverview | null>(null);
   readonly monitoring = signal<Monitoring | null>(null);
+  readonly activity = signal<ActivityDetail | null>(null);
   readonly loaded = signal(false);
   readonly busy = signal(false);
+  readonly scale10 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   durationMin: number | null = null;
+  rpe: number | null = null;
+  feeling: number | null = null;
+  fbComment = '';
 
   readonly dateLabel = new Intl.DateTimeFormat('fr-FR', {
     weekday: 'long',
@@ -220,6 +279,25 @@ export class MeTodayPage implements OnInit {
     await this.load();
   }
 
+  async sendFeedback(): Promise<void> {
+    const activity = this.activity();
+    if (!activity || this.rpe == null || this.feeling == null) return;
+    this.busy.set(true);
+    try {
+      await this.api.post(`/activities/${activity.id}/feedback`, {
+        rpe: this.rpe,
+        feeling: this.feeling,
+        comment: this.fbComment.trim() || null,
+      });
+      this.rpe = null;
+      this.feeling = null;
+      this.fbComment = '';
+      await this.load();
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
   async markDone(): Promise<void> {
     const s = this.session();
     if (!s || !this.durationMin) return;
@@ -246,8 +324,14 @@ export class MeTodayPage implements OnInit {
     this.checkin.set(checkin);
     this.overview.set(overview);
     this.monitoring.set(monitoring);
-    this.session.set(
-      sessions[0] ? await this.api.get<PlannedSessionDetail>(`/sessions/${sessions[0].id}`) : null,
+    const detail = sessions[0]
+      ? await this.api.get<PlannedSessionDetail>(`/sessions/${sessions[0].id}`)
+      : null;
+    this.session.set(detail);
+    this.activity.set(
+      detail?.completedSessionId
+        ? await this.api.get<ActivityDetail>(`/activities/${detail.completedSessionId}`).catch(() => null)
+        : null,
     );
     this.loaded.set(true);
   }

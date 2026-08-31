@@ -18,6 +18,7 @@ import type {
 } from '@kadro/shared';
 import { AuthService } from '../auth/auth.service';
 import { AthletesService } from '../athletes/athletes.service';
+import { MailService } from '../mail/mail.service';
 import { isDuplicateKeyError, TeamsService } from '../teams/teams.service';
 import { UsersService } from '../users/users.service';
 import type { TeamDocument } from '../teams/team.schema';
@@ -32,6 +33,7 @@ export class InviteService {
     private readonly athletes: AthletesService,
     private readonly auth: AuthService,
     private readonly config: ConfigService,
+    private readonly mail: MailService,
   ) {}
 
   /** Public — la carte « Marc · Coach · 18 athlètes » quand le code est reconnu. */
@@ -102,10 +104,10 @@ export class InviteService {
     return docs.map(toInvitationDto);
   }
 
-  /** L'envoi d'e-mail réel arrive avec le module mail ; on trace déjà l'invitation. */
   async createInvitation(teamId: Types.ObjectId, dto: InvitationCreate): Promise<InvitationDto> {
     try {
       const doc = await this.invitations.create({ teamId, email: dto.email, name: dto.name ?? null });
+      await this.sendInvitationMail(teamId, doc.email, doc.name, false);
       return toInvitationDto(doc);
     } catch (err) {
       if (isDuplicateKeyError(err)) throw new ConflictException({ code: 'invite.already_sent' });
@@ -122,7 +124,28 @@ export class InviteService {
       )
       .exec();
     if (!doc) throw new NotFoundException({ code: 'invite.not_found' });
+    await this.sendInvitationMail(teamId, doc.email, doc.name, true);
     return toInvitationDto(doc);
+  }
+
+  private async sendInvitationMail(
+    teamId: Types.ObjectId,
+    email: string,
+    name: string | null,
+    reminder: boolean,
+  ): Promise<void> {
+    const team = await this.teams.findById(teamId);
+    if (!team) return;
+    const owner = await this.users.findById(team.ownerId);
+    await this.mail.sendInvitation({
+      to: email,
+      athleteName: name,
+      coachName: owner ? `${owner.firstName} ${owner.lastName}` : team.name,
+      teamName: team.name,
+      code: team.inviteCode,
+      joinUrl: this.codeInfo(team).joinUrl,
+      reminder,
+    });
   }
 
   async revoke(teamId: Types.ObjectId, invitationId: string): Promise<void> {
