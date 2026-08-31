@@ -23,6 +23,10 @@ export class ApiClient {
     return this.refreshToken != null;
   }
 
+  get currentAccessToken(): string | null {
+    return this.accessToken;
+  }
+
   setTokens(session: Pick<AuthSession, 'accessToken' | 'refreshToken'>): void {
     this.accessToken = session.accessToken;
     this.refreshToken = session.refreshToken;
