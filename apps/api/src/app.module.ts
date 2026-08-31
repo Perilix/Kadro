@@ -10,6 +10,7 @@ import { TeamsModule } from './teams/teams.module';
 import { AthletesModule } from './athletes/athletes.module';
 import { GroupsModule } from './groups/groups.module';
 import { LibraryModule } from './library/library.module';
+import { PlanningModule } from './planning/planning.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { LibraryModule } from './library/library.module';
     AthletesModule,
     GroupsModule,
     LibraryModule,
+    PlanningModule,
     AuthModule,
     InviteModule,
   ],

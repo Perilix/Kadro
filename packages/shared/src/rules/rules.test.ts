@@ -12,6 +12,8 @@ import {
 import { epley1Rm, loadFromPctRm, tonnageKg } from './strength';
 import { acuteChronicRatio, sessionLoadUa } from './load';
 import { checkinLevel } from './checkin';
+import { estimateRunDurationSec, estimateStrengthDurationSec, resolveRunPaces } from './resolve';
+import type { RunBlock, StrengthItem } from '../dto/session';
 
 describe('VMA → allures (les chiffres de la maquette)', () => {
   it('Léa, VMA 16,5 à 100 % → 3:38 /km', () => {
@@ -79,6 +81,48 @@ describe('charge & ratio aigu / chronique', () => {
   });
   it('null sans historique', () => {
     expect(acuteChronicRatio(34, 0)).toBeNull();
+  });
+});
+
+describe('résolution de séance (VMA 16,5 de Léa)', () => {
+  const vma10x400: RunBlock[] = [
+    { kind: 'warmup', durationSec: 1200, distanceM: null, target: { type: 'zone', zone: 2 }, note: null },
+    {
+      kind: 'repeat',
+      count: 10,
+      children: [
+        { kind: 'work', durationSec: null, distanceM: 400, target: { type: 'vmaPct', minPct: 98, maxPct: 102 }, note: null },
+        { kind: 'recovery', durationSec: 60, distanceM: null, target: { type: 'free' }, note: null },
+      ],
+    },
+    { kind: 'cooldown', durationSec: 600, distanceM: null, target: { type: 'zone', zone: 1 }, note: null },
+  ];
+
+  it('résout chaque bloc ciblé avec son chemin', () => {
+    const paces = resolveRunPaces(vma10x400, 16.5);
+    expect(paces.map((p) => p.blockPath)).toEqual(['0', '1.0', '2']);
+    const work = paces.find((p) => p.blockPath === '1.0')!;
+    expect(formatPace(work.minSecPerKm)).toBe('3:34 /km');
+    expect(formatPace(work.maxSecPerKm)).toBe('3:43 /km');
+  });
+
+  it('sans VMA, seules les cibles en allure absolue sont résolues', () => {
+    const paces = resolveRunPaces(vma10x400, null);
+    expect(paces).toHaveLength(0);
+  });
+
+  it('estime la durée : échauffement + 10 × (400 m + 60 s récup) + retour au calme', () => {
+    const sec = estimateRunDurationSec(vma10x400, 16.5);
+    expect(sec).toBeGreaterThan(3200);
+    expect(sec).toBeLessThan(3600);
+  });
+
+  it('estime la durée d’une séance de renfo', () => {
+    const items: StrengthItem[] = [
+      { exerciseId: 'a'.repeat(24), order: 0, sets: 4, reps: 6, durationSec: null, perSide: false, load: { type: 'pctRm', pct: 70 }, restSec: 120, supersetGroup: null, note: null },
+      { exerciseId: 'b'.repeat(24), order: 1, sets: 3, reps: null, durationSec: 45, perSide: true, load: { type: 'bodyweight' }, restSec: 60, supersetGroup: null, note: null },
+    ];
+    expect(estimateStrengthDurationSec(items)).toBe(4 * (18 + 120) + 3 * (90 + 60));
   });
 });
 
