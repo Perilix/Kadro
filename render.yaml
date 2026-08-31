@@ -40,6 +40,10 @@ services:
         sync: false
       - key: POLAR_CLIENT_SECRET
         sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
 
   # --- Web coach (Angular, statique) --------------------------------------
   # corepack enable échoue sur Render (/usr/bin en lecture seule) — on installe pnpm via npm.

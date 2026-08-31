@@ -90,6 +90,10 @@ export const routes: Routes = [
         path: 'integrations',
         loadComponent: () => import('./pages/integrations.page').then((m) => m.IntegrationsPage),
       },
+      {
+        path: 'equipe',
+        loadComponent: () => import('./pages/team.page').then((m) => m.TeamPage),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

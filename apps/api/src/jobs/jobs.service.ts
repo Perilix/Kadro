@@ -36,8 +36,22 @@ export class JobsService {
   async hourly(): Promise<JobsReport> {
     const missed = await this.markMissedSessions();
     const alertsEvaluated = await this.evaluateAthleteAlerts();
+    await this.expireTrials();
     this.logger.log(`jobs: ${missed} séances manquées, ${alertsEvaluated} athlètes évalués`);
     return { missed, alertsEvaluated };
+  }
+
+  async expireTrials(): Promise<void> {
+    await this.teams
+      .updateMany(
+        {
+          'subscription.plan': 'trial',
+          'subscription.status': 'trialing',
+          'subscription.trialEndsAt': { $lt: new Date() },
+        },
+        { $set: { 'subscription.status': 'past_due' } },
+      )
+      .exec();
   }
 
   async markMissedSessions(): Promise<number> {
