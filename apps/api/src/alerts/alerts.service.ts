@@ -76,6 +76,15 @@ export class AlertsService {
   countOpen(teamId: Types.ObjectId): Promise<number> {
     return this.model.countDocuments({ teamId, status: 'open' }).exec();
   }
+
+  async resolveByKind(athleteId: Types.ObjectId, kinds: AlertKind[]): Promise<void> {
+    await this.model
+      .updateMany(
+        { athleteId, kind: { $in: kinds }, status: 'open' },
+        { $set: { status: 'resolved', resolvedAt: new Date(), resolvedById: null } },
+      )
+      .exec();
+  }
 }
 
 function toAlertDto(doc: AlertDocument): AlertDto {

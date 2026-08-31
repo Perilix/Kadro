@@ -42,6 +42,8 @@ export class CheckinsService {
 
     await this.updateSnapshot(athlete, dto.date, level);
     await this.evaluateRedStreak(athlete, doc);
+    await this.alerts.resolveByKind(athlete._id, ['no_checkin']);
+    if (level !== 'bad') await this.alerts.resolveByKind(athlete._id, ['form_red_streak']);
     return toCheckinDto(doc);
   }
 

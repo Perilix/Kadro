@@ -21,6 +21,7 @@ import { acuteChronicRatio, sessionLoadUa, tonnageKg } from '@kadro/shared';
 import { Athlete } from '../athletes/athlete.schema';
 import type { JwtPayload } from '../auth/jwt-payload';
 import { decodeCursor, encodeCursor } from '../common/cursor';
+import { AlertsService } from '../alerts/alerts.service';
 import { Exercise } from '../library/exercise.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PlannedSession, PlannedSessionDocument } from '../planning/planned-session.schema';
@@ -44,6 +45,7 @@ export class ActivitiesService {
     @InjectModel(Exercise.name) private readonly exercises: Model<Exercise>,
     private readonly users: UsersService,
     private readonly notifications: NotificationsService,
+    private readonly alerts: AlertsService,
   ) {}
 
   viewerOf(user: JwtPayload): Viewer {
@@ -99,6 +101,7 @@ export class ActivitiesService {
     planned.completedSessionId = doc._id;
     await planned.save();
     await this.recomputeSnapshot(planned.athleteId);
+    await this.alerts.resolveByKind(planned.athleteId, ['no_activity', 'missed_session']);
     return this.toDetail(doc);
   }
 

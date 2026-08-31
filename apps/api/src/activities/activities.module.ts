@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AlertsModule } from '../alerts/alerts.module';
 import { Athlete, AthleteSchema } from '../athletes/athlete.schema';
 import { Exercise, ExerciseSchema } from '../library/exercise.schema';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -21,6 +22,7 @@ import { CompletedSession, CompletedSessionSchema } from './completed-session.sc
     ]),
     UsersModule,
     NotificationsModule,
+    AlertsModule,
   ],
   controllers: [ActivitiesController],
   providers: [ActivitiesService],
