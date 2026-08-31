@@ -24,6 +24,7 @@ import type { JwtPayload } from '../auth/jwt-payload';
 import { decodeCursor, encodeCursor } from '../common/cursor';
 import { AlertsService } from '../alerts/alerts.service';
 import { Exercise } from '../library/exercise.schema';
+import { isDuplicateKeyError } from '../teams/teams.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PlannedSession, PlannedSessionDocument } from '../planning/planned-session.schema';
 import { UsersService } from '../users/users.service';
@@ -207,6 +208,57 @@ export class ActivitiesService {
     await doc.save();
     await this.recomputeSnapshot(doc.athleteId);
     return this.toDetail(doc);
+  }
+
+  async importExternal(input: {
+    teamId: Types.ObjectId;
+    athleteId: Types.ObjectId;
+    source: CompletedSession['source'];
+    externalId: string;
+    sport: CompletedSession['sport'];
+    startedAt: Date;
+    timezone: string;
+    durationSec: number;
+    distanceM: number | null;
+    elevGainM: number | null;
+    avgPaceSecPerKm: number | null;
+    avgHrBpm: number | null;
+    maxHrBpm: number | null;
+    avgCadenceSpm: number | null;
+    deviceName: string | null;
+  }): Promise<'imported' | 'duplicate'> {
+    let doc: CompletedSessionDocument;
+    try {
+      doc = await this.model.create({ ...input, syncedAt: new Date() });
+    } catch (err) {
+      if (isDuplicateKeyError(err)) return 'duplicate';
+      throw err;
+    }
+    const localDate = input.startedAt.toISOString().slice(0, 10);
+    const plannedType = input.sport === 'strength' ? 'strength' : 'run';
+    if (input.sport === 'run' || input.sport === 'trail' || input.sport === 'strength') {
+      const planned = await this.planned
+        .findOne({
+          athleteId: input.athleteId,
+          date: localDate,
+          type: plannedType,
+          status: { $in: ['planned', 'missed'] },
+          completedSessionId: null,
+        })
+        .exec();
+      if (planned) {
+        doc.plannedSessionId = planned._id;
+        doc.loadUa = sessionLoadUa(input.durationSec / 60, planned.expectedDifficulty);
+        await doc.save();
+        planned.status = 'completed';
+        planned.completedSessionId = doc._id;
+        await planned.save();
+        await this.alerts.resolveByKind(input.athleteId, ['missed_session']);
+      }
+    }
+    await this.recomputeSnapshot(input.athleteId);
+    await this.alerts.resolveByKind(input.athleteId, ['no_activity']);
+    return 'imported';
   }
 
   async recent(teamId: Types.ObjectId, athleteId: Types.ObjectId, limit: number): Promise<ActivityListItem[]> {

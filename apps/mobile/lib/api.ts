@@ -4,7 +4,8 @@ import type { AuthSession } from '@kadro/shared';
 
 const devHost = Constants.expoConfig?.hostUri?.split(':')[0];
 export const API_URL =
-  __DEV__ && devHost ? `http://${devHost}:3000/v1` : 'https://kadro-api.onrender.com/v1';
+  process.env.EXPO_PUBLIC_API_URL ??
+  (__DEV__ && devHost ? `http://${devHost}:3000/v1` : 'https://kadro-api.onrender.com/v1');
 
 const ACCESS_KEY = 'kadro.access';
 const REFRESH_KEY = 'kadro.refresh';
@@ -62,6 +63,10 @@ class ApiClient {
 
   patch<T>(path: string, body: unknown): Promise<T> {
     return this.request<T>('PATCH', path, body);
+  }
+
+  delete(path: string): Promise<void> {
+    return this.request<void>('DELETE', path);
   }
 
   private async request<T>(method: string, path: string, body?: unknown, retried = false): Promise<T> {

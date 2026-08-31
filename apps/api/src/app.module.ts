@@ -19,6 +19,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ChatModule } from './chat/chat.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { JobsModule } from './jobs/jobs.module';
+import { ConnectionsModule } from './connections/connections.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { JobsModule } from './jobs/jobs.module';
     ChatModule,
     ActivitiesModule,
     JobsModule,
+    ConnectionsModule,
     AuthModule,
     InviteModule,
   ],

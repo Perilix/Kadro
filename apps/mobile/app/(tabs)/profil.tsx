@@ -1,14 +1,60 @@
-import { router } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Linking, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { AuthorizeUrl, Connection } from '@kadro/shared';
+import { ApiError, api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useTheme } from '../../lib/theme';
-import { Button, Card } from '../../lib/ui';
+import { Button, Card, StatusDot } from '../../lib/ui';
+
+const PROVIDER_LABELS: Record<string, string> = {
+  garmin: 'Garmin',
+  coros: 'COROS',
+  polar: 'Polar',
+  suunto: 'Suunto',
+  apple: 'Apple Santé',
+  wahoo: 'Wahoo',
+  strava: 'Strava',
+  zwift: 'Zwift',
+  withings: 'Withings',
+};
 
 export default function ProfilScreen() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const { user, athlete, logout } = useAuth();
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setConnections(await api.get<Connection[]>('/me/connections').catch(() => []));
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
+
+  const connectStrava = async () => {
+    setError(null);
+    try {
+      const { url } = await api.get<AuthorizeUrl>('/connections/strava/authorize');
+      await Linking.openURL(url);
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.code === 'connection.provider_not_configured'
+          ? 'Strava n’est pas encore configuré côté serveur.'
+          : 'Connexion à Strava impossible pour le moment.',
+      );
+    }
+  };
+
+  const disconnect = async (provider: string) => {
+    await api.delete(`/me/connections/${provider}`);
+    await load();
+  };
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16, paddingTop: insets.top + 12, gap: 14 }}>
@@ -23,9 +69,32 @@ export default function ProfilScreen() {
         ) : null}
       </Card>
       <Card>
-        <Text style={{ color: t.ink, fontSize: 15, fontWeight: '600', marginBottom: 4 }}>Montres & connexions</Text>
-        <Text style={{ color: t.ink2, fontSize: 13 }}>
-          Garmin, Coros, Polar, Suunto… La connexion des montres arrive bientôt.
+        <Text style={{ color: t.ink, fontSize: 15, fontWeight: '600', marginBottom: 10 }}>
+          Montres & connexions
+        </Text>
+        {connections.map((c) => (
+          <View
+            key={c.provider}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 }}
+          >
+            <View style={{ gap: 2 }}>
+              <Text style={{ color: t.ink, fontWeight: '600' }}>{PROVIDER_LABELS[c.provider] ?? c.provider}</Text>
+              <StatusDot
+                level={c.status === 'connected' ? 'good' : 'bad'}
+                label={c.status === 'connected' ? 'Connecté' : 'Erreur'}
+              />
+            </View>
+            <Button label="Déconnecter" ghost onPress={() => void disconnect(c.provider)} />
+          </View>
+        ))}
+        {!connections.some((c) => c.provider === 'strava') ? (
+          <View style={{ marginTop: connections.length ? 8 : 0 }}>
+            <Button label="Connecter Strava" onPress={() => void connectStrava()} />
+          </View>
+        ) : null}
+        {error ? <Text style={{ color: t.bad, fontSize: 13, marginTop: 8 }}>{error}</Text> : null}
+        <Text style={{ color: t.ink3, fontSize: 12, marginTop: 10 }}>
+          Garmin, COROS, Polar et Suunto arrivent — vos activités remonteront automatiquement.
         </Text>
       </Card>
       <View>

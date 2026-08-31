@@ -24,7 +24,9 @@ export default function ConnexionScreen() {
       setError(
         err instanceof ApiError && err.code === 'auth.invalid_credentials'
           ? 'E-mail ou mot de passe incorrect.'
-          : 'Connexion impossible. Réessayez.',
+          : err instanceof ApiError
+            ? 'Connexion impossible. Réessayez.'
+            : 'Serveur injoignable — vérifiez votre connexion.',
       );
     } finally {
       setBusy(false);

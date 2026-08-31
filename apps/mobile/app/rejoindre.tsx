@@ -25,8 +25,12 @@ export default function RejoindreScreen() {
     setError(null);
     try {
       setPreview(await api.get<InvitePreview>(`/invite/preview/${code.trim().toUpperCase()}`));
-    } catch {
-      setError('Code inconnu. Vérifiez auprès de votre coach.');
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? 'Code inconnu. Vérifiez auprès de votre coach.'
+          : 'Serveur injoignable — vérifiez votre connexion.',
+      );
     } finally {
       setBusy(false);
     }
