@@ -1,0 +1,55 @@
+.hero {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.card {
+  max-width: 480px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 40px;
+}
+
+.brand {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+}
+
+.badge {
+  display: inline-block;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+h1 {
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin: 16px 0 8px;
+}
+
+p {
+  color: var(--ink2);
+  line-height: 1.55;
+  margin: 0 0 24px;
+}
+
+.btn {
+  display: inline-block;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-ink);
+  border-radius: var(--radius-control);
+  padding: 11px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}

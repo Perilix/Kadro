@@ -1,18 +1,21 @@
 # Blueprint Render — https://render.com/docs/blueprint-spec
 # À connecter au dépôt GitHub Perilix/Kadro depuis le dashboard Render (New > Blueprint).
+# Deux services : l'API (Docker) et le site web coach (statique).
+# L'app mobile (apps/mobile, Expo) ne passe PAS par Render : builds EAS → TestFlight / Play Store.
+
 services:
+  # --- API NestJS ---------------------------------------------------------
   - type: web
     name: kadro-api
     runtime: docker
     region: frankfurt
     plan: starter
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
     healthCheckPath: /v1/health
     envVars:
-      - key: NODE_ENV
-        value: production
       - key: MONGODB_URI
-        sync: false # à coller depuis Atlas (Database > Connect > Drivers)
+        sync: false # à coller depuis Atlas (Database > Connect > Drivers), avec /kadro comme nom de base
       - key: JWT_ACCESS_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
@@ -22,9 +25,16 @@ services:
       - key: JOIN_URL_BASE
         value: https://kadro-app.com/rejoindre
 
-  # apps/web (Angular, site statique) — à décommenter quand l'app existera :
-  # - type: web
-  #   name: kadro-web
-  #   runtime: static
-  #   buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @kadro/web build
-  #   staticPublishPath: apps/web/dist/browser
+  # --- Web coach (Angular, statique) --------------------------------------
+  # corepack enable échoue sur Render (/usr/bin en lecture seule) — on installe pnpm via npm.
+  # La version de Node est figée par .node-version à la racine.
+  - type: web
+    name: kadro-web
+    runtime: static
+    buildCommand: npm install -g pnpm@9.15.0 && pnpm install --frozen-lockfile && pnpm --filter @kadro/tokens build && pnpm --filter @kadro/shared build && pnpm --filter @kadro/web build
+    staticPublishPath: apps/web/dist/web/browser
+    routes:
+      # SPA : toutes les routes retombent sur index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -1,0 +1,18 @@
+/* Styles globaux — les variables viennent de @kadro/tokens (tokens.css, chargé via angular.json). */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-family);
+  font-feature-settings: "tnum";
+  -webkit-font-smoothing: antialiased;
+}
