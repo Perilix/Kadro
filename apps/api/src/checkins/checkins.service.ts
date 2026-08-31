@@ -1,7 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import type { Checkin as CheckinDto, CheckinCreate, CheckinToday, CheckinsQuery } from '@kadro/shared';
+import type {
+  Checkin as CheckinDto,
+  CheckinCreate,
+  CheckinToday,
+  CheckinsQuery,
+  Monitoring,
+} from '@kadro/shared';
 import { checkinLevel } from '@kadro/shared';
 import { Athlete, AthleteDocument } from '../athletes/athlete.schema';
 import { Team } from '../teams/team.schema';
@@ -67,6 +73,42 @@ export class CheckinsService {
     return {
       checkin: checkin ? toCheckinDto(checkin) : null,
       prefill: { sleepMin: metric?.sleepMin ?? null },
+    };
+  }
+
+  async monitoring(teamId: Types.ObjectId, athleteId: Types.ObjectId, weeks: number): Promise<Monitoring> {
+    const athlete = await this.athletes.findOne({ _id: athleteId, teamId }).exec();
+    if (!athlete) throw new NotFoundException({ code: 'athlete.not_found' });
+    const from = new Date(Date.now() - weeks * 7 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const [metrics, checkins] = await Promise.all([
+      this.healthMetrics.find({ athleteId, date: { $gte: from } }).exec(),
+      this.model.find({ athleteId, date: { $gte: from } }).exec(),
+    ]);
+    const metricByDate = new Map(metrics.map((m) => [m.date, m]));
+    const checkinByDate = new Map(checkins.map((c) => [c.date, c]));
+    const days: Monitoring['days'] = [];
+    for (let i = weeks * 7 - 1; i >= 0; i -= 1) {
+      const date = new Date(Date.now() - i * 24 * 3600 * 1000).toISOString().slice(0, 10);
+      const metric = metricByDate.get(date);
+      days.push({
+        date,
+        sleepMin: metric?.sleepMin ?? null,
+        restingHrBpm: metric?.restingHrBpm ?? null,
+        hrvRmssdMs: metric?.hrvRmssdMs ?? null,
+        weightKg: metric?.weightKg ?? null,
+        checkinLevel: checkinByDate.get(date)?.level ?? null,
+      });
+    }
+    const last7 = days.slice(-7);
+    return {
+      days,
+      summary7d: {
+        sleepAvgMin: avgOrNull(last7.map((d) => d.sleepMin)),
+        restingHrAvgBpm: avgOrNull(last7.map((d) => d.restingHrBpm)),
+        hrvAvgMs: avgOrNull(last7.map((d) => d.hrvRmssdMs)),
+        weightKg: [...last7].reverse().find((d) => d.weightKg != null)?.weightKg ?? null,
+      },
+      thresholds: await this.thresholdsFor(athlete),
     };
   }
 
@@ -142,6 +184,12 @@ function toCheckinDto(doc: CheckinDocument): CheckinDto {
     submittedAt: doc.submittedAt.toISOString(),
     updatedAt: doc.updatedAt?.toISOString() ?? null,
   };
+}
+
+function avgOrNull(values: (number | null)[]): number | null {
+  const present = values.filter((v): v is number => v != null);
+  if (present.length === 0) return null;
+  return Math.round(present.reduce((a, b) => a + b, 0) / present.length);
 }
 
 function todayYmd(): string {

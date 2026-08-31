@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { CoachDashboard } from '@kadro/shared';
+import type { Alert, AthleteListItem, CoachDashboard, Page } from '@kadro/shared';
 import { ApiClient } from '../core/api-client';
 
 const FORM_LABELS: Record<string, string> = {
@@ -9,6 +9,32 @@ const FORM_LABELS: Record<string, string> = {
   bad: 'Signal rouge',
   none: '—',
 };
+
+export const ALERT_LABELS: Record<string, string> = {
+  form_red_streak: 'Jours rouges consécutifs',
+  missed_session: 'Séance manquée',
+  no_activity: 'Aucune activité',
+  no_checkin: 'Sans check-in',
+  sleep_low: 'Sommeil insuffisant',
+  resting_hr_up: 'FC repos élevée',
+  hrv_drop: 'Chute de VFC',
+  acr_high: 'Charge aiguë élevée',
+  race_soon: 'Objectif imminent',
+  no_watch: 'Pas de montre reliée',
+  watch_disconnected: 'Montre déconnectée',
+  watch_push_failed: 'Envoi montre échoué',
+};
+
+export function alertDetail(alert: Alert): string {
+  const p = alert.params;
+  if (p['days'] != null) return `${p['days']} j`;
+  if (p['deltaBpm'] != null) return `+${p['deltaBpm']} bpm`;
+  if (p['dropPct'] != null) return `−${p['dropPct']} %`;
+  if (p['avgMin'] != null) return `${Math.floor(Number(p['avgMin']) / 60)} h ${Number(p['avgMin']) % 60} en moyenne`;
+  if (p['name'] != null) return String(p['name']);
+  if (p['label'] != null) return String(p['label']);
+  return '';
+}
 
 @Component({
   selector: 'app-dashboard-page',
@@ -34,6 +60,26 @@ const FORM_LABELS: Record<string, string> = {
           <div class="caption">À traiter</div>
         </div>
       </div>
+      @if (alerts(); as alertList) {
+        @if (alertList.length > 0) {
+          <section class="card treat">
+            <h2>À traiter</h2>
+            @for (alert of alertList; track alert.id) {
+              <div class="alert-row">
+                <span class="status status-{{ alert.severity === 'critical' ? 'bad' : alert.severity === 'warn' ? 'warn' : 'none' }}">
+                  {{ alertLabel(alert.kind) }}
+                </span>
+                <a class="who" [routerLink]="['/athletes', alert.athleteId]">{{ athleteName(alert.athleteId) }}</a>
+                <span class="muted detail">{{ detail(alert) }}</span>
+                <span class="acts">
+                  <button class="btn btn-ghost small" type="button" (click)="closeAlert(alert, 'resolve')">Traité</button>
+                  <button class="btn btn-ghost small" type="button" (click)="closeAlert(alert, 'dismiss')">Ignorer</button>
+                </span>
+              </div>
+            }
+          </section>
+        }
+      }
       <section class="card">
         <h2>Aujourd'hui</h2>
         @if (d.today.length === 0) {
@@ -83,17 +129,51 @@ const FORM_LABELS: Record<string, string> = {
   styles: `
     .value.alert { color: var(--bad); }
     section { margin-top: 4px; }
+    .treat { margin-bottom: 16px; }
+    .alert-row { display: flex; align-items: center; gap: 14px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+    .alert-row:last-child { border-bottom: none; }
+    .alert-row .status { min-width: 190px; }
+    .who { font-weight: 600; min-width: 130px; }
+    .detail { flex: 1; font-size: 13px; }
+    .acts { display: flex; gap: 6px; }
+    .small { padding: 5px 10px; font-size: 12px; }
   `,
 })
 export class DashboardPage implements OnInit {
   private readonly api = inject(ApiClient);
   readonly dashboard = signal<CoachDashboard | null>(null);
+  readonly alerts = signal<Alert[] | null>(null);
+  private names = new Map<string, string>();
 
   async ngOnInit(): Promise<void> {
-    this.dashboard.set(await this.api.get<CoachDashboard>('/team/dashboard'));
+    const [dashboard, alerts, roster] = await Promise.all([
+      this.api.get<CoachDashboard>('/team/dashboard'),
+      this.api.get<Page<Alert>>('/alerts'),
+      this.api.get<Page<AthleteListItem>>('/athletes'),
+    ]);
+    this.names = new Map(roster.items.map((a) => [a.id, `${a.firstName} ${a.lastName}`]));
+    this.dashboard.set(dashboard);
+    this.alerts.set(alerts.items);
   }
 
   formLabel(status: string): string {
     return FORM_LABELS[status] ?? '—';
+  }
+
+  alertLabel(kind: string): string {
+    return ALERT_LABELS[kind] ?? kind;
+  }
+
+  athleteName(id: string): string {
+    return this.names.get(id) ?? '';
+  }
+
+  detail(alert: Alert): string {
+    return alertDetail(alert);
+  }
+
+  async closeAlert(alert: Alert, action: 'resolve' | 'dismiss'): Promise<void> {
+    await this.api.post(`/alerts/${alert.id}/${action}`);
+    this.alerts.update((list) => (list ? list.filter((a) => a.id !== alert.id) : list));
   }
 }

@@ -11,6 +11,7 @@ export * from './dto/alert';
 export * from './dto/chat';
 export * from './dto/notification';
 export * from './dto/activity';
+export * from './dto/insights';
 export * from './rules/pace';
 export * from './rules/strength';
 export * from './rules/load';

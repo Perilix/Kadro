@@ -31,7 +31,12 @@ import {
   type Test,
   type TestCreate,
 } from '@kadro/shared';
+import type { AthleteOverview, ExerciseStats, Monitoring } from '@kadro/shared';
 import { z } from 'zod';
+import { ActivitiesService } from '../activities/activities.service';
+import { AlertsService } from '../alerts/alerts.service';
+import { CheckinsService } from '../checkins/checkins.service';
+import { PlanningService } from '../planning/planning.service';
 import { CoachGuard } from '../auth/coach.guard';
 import { JwtAccessGuard } from '../auth/jwt-access.guard';
 import type { JwtPayload } from '../auth/jwt-payload';
@@ -45,6 +50,7 @@ import { NotesService } from './notes.service';
 import { TestsService } from './tests.service';
 
 const zTestListQuery = z.object({ kind: zTestKind.optional() });
+const zWeeksQuery = z.object({ weeks: z.coerce.number().int().min(1).max(26).default(8) });
 
 @Controller('athletes')
 @UseGuards(JwtAccessGuard, CoachGuard)
@@ -54,6 +60,10 @@ export class AthletesController {
     private readonly tests: TestsService,
     private readonly notes: NotesService,
     private readonly teams: TeamsService,
+    private readonly activities: ActivitiesService,
+    private readonly planning: PlanningService,
+    private readonly checkins: CheckinsService,
+    private readonly alerts: AlertsService,
   ) {}
 
   @Get()
@@ -93,6 +103,61 @@ export class AthletesController {
   async unarchive(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<Athlete> {
     const doc = await this.athletes.getInTeam(teamIdOf(user), parseObjectId(id));
     return this.athletes.setStatus(doc, 'active');
+  }
+
+  @Get(':id/overview')
+  async overview(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Query(new ZodValidationPipe(zWeeksQuery)) query: z.infer<typeof zWeeksQuery>,
+  ): Promise<AthleteOverview> {
+    const teamId = teamIdOf(user);
+    const doc = await this.athletes.getInTeam(teamId, parseObjectId(id));
+    const today = new Date();
+    const monday = new Date(today);
+    monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
+    const sunday = new Date(monday);
+    sunday.setUTCDate(sunday.getUTCDate() + 6);
+    const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const [loadByWeek, week, recentSessions, checkins7d, openAlerts] = await Promise.all([
+      this.activities.weeklyLoads(doc._id, query.weeks),
+      this.planning.list(teamId, {
+        from: monday.toISOString().slice(0, 10),
+        to: sunday.toISOString().slice(0, 10),
+        athleteId: doc._id.toString(),
+      }),
+      this.activities.recent(teamId, doc._id, 5),
+      this.checkins.list(teamId, {
+        athleteId: doc._id.toString(),
+        from: weekAgo,
+        to: today.toISOString().slice(0, 10),
+      }),
+      this.alerts.list(teamId, { status: 'open', athleteId: doc._id.toString(), limit: 1 }),
+    ]);
+    return {
+      loadByWeek,
+      acuteChronicRatio: doc.snapshot.acuteChronicRatio,
+      week,
+      recentSessions,
+      checkins7d,
+      currentAlert: openAlerts.items[0] ?? null,
+    };
+  }
+
+  @Get(':id/monitoring')
+  async monitoring(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Query(new ZodValidationPipe(zWeeksQuery)) query: z.infer<typeof zWeeksQuery>,
+  ): Promise<Monitoring> {
+    const doc = await this.athletes.getInTeam(teamIdOf(user), parseObjectId(id));
+    return this.checkins.monitoring(doc.teamId, doc._id, query.weeks);
+  }
+
+  @Get(':id/strength-stats')
+  async strengthStats(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<ExerciseStats[]> {
+    const doc = await this.athletes.getInTeam(teamIdOf(user), parseObjectId(id));
+    return this.activities.strengthStats(doc._id);
   }
 
   @Get(':id/paces')

@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ActivitiesModule } from '../activities/activities.module';
+import { AlertsModule } from '../alerts/alerts.module';
+import { CheckinsModule } from '../checkins/checkins.module';
 import { Group, GroupSchema } from '../groups/group.schema';
+import { PlanningModule } from '../planning/planning.module';
 import { TeamsModule } from '../teams/teams.module';
 import { UsersModule } from '../users/users.module';
 import { Athlete, AthleteSchema } from './athlete.schema';
@@ -21,6 +25,10 @@ import { TestsService } from './tests.service';
     ]),
     UsersModule,
     TeamsModule,
+    ActivitiesModule,
+    PlanningModule,
+    CheckinsModule,
+    AlertsModule,
   ],
   controllers: [AthletesController],
   providers: [AthletesService, TestsService, NotesService],

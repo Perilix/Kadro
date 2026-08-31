@@ -17,7 +17,8 @@ import type {
   Streams,
   StreamsQuery,
 } from '@kadro/shared';
-import { acuteChronicRatio, sessionLoadUa, tonnageKg } from '@kadro/shared';
+import { acuteChronicRatio, epley1Rm, sessionLoadUa, tonnageKg } from '@kadro/shared';
+import type { ExerciseStats, WeekLoad } from '@kadro/shared';
 import { Athlete } from '../athletes/athlete.schema';
 import type { JwtPayload } from '../auth/jwt-payload';
 import { decodeCursor, encodeCursor } from '../common/cursor';
@@ -206,6 +207,79 @@ export class ActivitiesService {
     await doc.save();
     await this.recomputeSnapshot(doc.athleteId);
     return this.toDetail(doc);
+  }
+
+  async recent(teamId: Types.ObjectId, athleteId: Types.ObjectId, limit: number): Promise<ActivityListItem[]> {
+    const docs = await this.model
+      .find({ teamId, athleteId })
+      .sort({ startedAt: -1, _id: -1 })
+      .limit(limit)
+      .exec();
+    const names = await this.plannedNames(docs);
+    return docs.map((doc) => toListItem(doc, names.get(doc.plannedSessionId?.toString() ?? '') ?? null));
+  }
+
+  async weeklyLoads(athleteId: Types.ObjectId, weeks: number): Promise<WeekLoad[]> {
+    const since = new Date(Date.now() - weeks * 7 * 24 * 3600 * 1000);
+    const docs = await this.model.find({ athleteId, startedAt: { $gte: since } }).exec();
+    const byWeek = new Map<string, { loadUa: number; volumeM: number }>();
+    for (const doc of docs) {
+      const week = isoWeek(doc.startedAt);
+      const entry = byWeek.get(week) ?? { loadUa: 0, volumeM: 0 };
+      entry.loadUa += doc.loadUa ?? 0;
+      if (doc.sport === 'run' || doc.sport === 'trail') entry.volumeM += doc.distanceM ?? 0;
+      byWeek.set(week, entry);
+    }
+    const result: WeekLoad[] = [];
+    for (let i = weeks - 1; i >= 0; i -= 1) {
+      const week = isoWeek(new Date(Date.now() - i * 7 * 24 * 3600 * 1000));
+      const entry = byWeek.get(week);
+      result.push({
+        week,
+        loadUa: Math.round(entry?.loadUa ?? 0),
+        volumeKm: Math.round((entry?.volumeM ?? 0) / 100) / 10,
+      });
+    }
+    return result;
+  }
+
+  async strengthStats(athleteId: Types.ObjectId): Promise<ExerciseStats[]> {
+    const since = new Date(Date.now() - 16 * 7 * 24 * 3600 * 1000);
+    const docs = await this.model
+      .find({ athleteId, sport: 'strength', startedAt: { $gte: since }, strength: { $ne: null } })
+      .sort({ startedAt: 1 })
+      .exec();
+    const stats = new Map<string, ExerciseStats>();
+    for (const doc of docs) {
+      const week = isoWeek(doc.startedAt);
+      const date = doc.startedAt.toISOString().slice(0, 10);
+      for (const exercise of doc.strength?.exercises ?? []) {
+        const key = exercise.exerciseId.toString();
+        const entry =
+          stats.get(key) ??
+          ({ exerciseId: key, name: exercise.name, est1RmKg: null, est1RmAt: null, lastWorkingKg: null, weeklyMaxKg: [] } as ExerciseStats);
+        let weekMax = 0;
+        for (const set of exercise.sets) {
+          if (!set.done || set.kg == null) continue;
+          entry.lastWorkingKg = set.kg;
+          weekMax = Math.max(weekMax, set.kg);
+          if (set.reps != null && set.reps >= 1) {
+            const rm = Math.round(epley1Rm(set.kg, set.reps) * 2) / 2;
+            if (entry.est1RmKg == null || rm >= entry.est1RmKg) {
+              entry.est1RmKg = rm;
+              entry.est1RmAt = date;
+            }
+          }
+        }
+        if (weekMax > 0) {
+          const existing = entry.weeklyMaxKg.find((w) => w.week === week);
+          if (existing) existing.kg = Math.max(existing.kg, weekMax);
+          else entry.weeklyMaxKg.push({ week, kg: weekMax });
+        }
+        stats.set(key, entry);
+      }
+    }
+    return [...stats.values()];
   }
 
   async recomputeSnapshot(athleteId: Types.ObjectId): Promise<void> {
@@ -405,6 +479,14 @@ function toListItem(doc: CompletedSessionDocument, name: string | null): Activit
     hasStreams: doc.hasStreams,
     feedbackRpe: doc.feedback?.rpe ?? null,
   };
+}
+
+function isoWeek(date: Date): string {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
 
 function sum(values: number[]): number {
