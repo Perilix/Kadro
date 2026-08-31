@@ -27,7 +27,8 @@
             "styles": [
               "node_modules/@kadro/tokens/dist/tokens.css",
               "src/styles.css"
-            ]
+            ],
+            "allowedCommonJsDependencies": ["@kadro/shared"]
           },
           "configurations": {
             "production": {
@@ -43,7 +44,13 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ]
             },
             "development": {
               "optimization": false,

@@ -21,7 +21,7 @@ services:
       - key: JWT_REFRESH_SECRET
         generateValue: true
       - key: CORS_ORIGINS
-        value: https://kadro.app,https://kadro-app.com
+        value: https://kadro.app,https://kadro-app.com,https://kadro-web.onrender.com
       - key: JOIN_URL_BASE
         value: https://kadro-app.com/rejoindre
 
