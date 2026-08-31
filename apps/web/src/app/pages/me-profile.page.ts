@@ -40,9 +40,14 @@ const PROVIDER_LABELS: Record<string, string> = {
           <button class="btn btn-ghost" type="button" (click)="disconnect(c.provider)">Déconnecter</button>
         </div>
       }
-      @if (!hasStrava()) {
-        <button class="btn strava" type="button" (click)="connectStrava()">Connecter Strava</button>
-      }
+      <div class="connect-row">
+        @if (!has('strava')) {
+          <button class="btn" type="button" (click)="connect('strava')">Connecter Strava</button>
+        }
+        @if (!has('polar')) {
+          <button class="btn" type="button" (click)="connect('polar')">Connecter Polar</button>
+        }
+      </div>
       @if (error()) {
         <p class="error">{{ error() }}</p>
       }
@@ -56,7 +61,7 @@ const PROVIDER_LABELS: Record<string, string> = {
     .conn:last-of-type { border-bottom: none; }
     .conn .status { margin-left: 12px; }
     .conn .btn { font-size: 13px; padding: 6px 12px; }
-    .strava { margin-top: 12px; }
+    .connect-row { display: flex; gap: 10px; margin-top: 12px; }
     .small { font-size: 12px; margin-top: 12px; }
   `,
 })
@@ -78,20 +83,20 @@ export class MeProfilePage implements OnInit {
     return PROVIDER_LABELS[provider] ?? provider;
   }
 
-  hasStrava(): boolean {
-    return this.connections().some((c) => c.provider === 'strava');
+  has(provider: string): boolean {
+    return this.connections().some((c) => c.provider === provider);
   }
 
-  async connectStrava(): Promise<void> {
+  async connect(provider: string): Promise<void> {
     this.error.set(null);
     try {
-      const { url } = await this.api.get<AuthorizeUrl>('/connections/strava/authorize?platform=web');
+      const { url } = await this.api.get<AuthorizeUrl>(`/connections/${provider}/authorize?platform=web`);
       window.location.href = url;
     } catch (err) {
       this.error.set(
         err instanceof ApiError && err.code === 'connection.provider_not_configured'
-          ? "Strava n'est pas configuré côté serveur."
-          : 'Connexion à Strava impossible pour le moment.',
+          ? `${this.providerLabel(provider)} n'est pas encore configuré côté serveur.`
+          : `Connexion à ${this.providerLabel(provider)} impossible pour le moment.`,
       );
     }
   }

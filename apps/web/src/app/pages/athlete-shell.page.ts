@@ -12,6 +12,7 @@ import { AuthStore } from '../core/auth-store';
         <nav>
           <a routerLink="/moi" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active">Aujourd'hui</a>
           <a routerLink="/moi/planning" routerLinkActive="active">Planning</a>
+          <a routerLink="/moi/progression" routerLinkActive="active">Progression</a>
           <a routerLink="/moi/messages" routerLinkActive="active">Messages</a>
           <a routerLink="/moi/profil" routerLinkActive="active">Profil</a>
         </nav>
@@ -34,7 +35,7 @@ import { AuthStore } from '../core/auth-store';
     nav a { padding: 7px 12px; border-radius: var(--radius-control); font-size: 14px; font-weight: 500; color: var(--ink2); }
     nav a.active { background: var(--nav-active); color: var(--ink); }
     .topbar .btn { font-size: 13px; padding: 7px 12px; }
-    .content { max-width: 640px; margin: 0 auto; padding: 28px 20px; }
+    .content { max-width: 960px; margin: 0 auto; padding: 28px 20px; }
   `,
 })
 export class AthleteShellPage {

@@ -15,6 +15,7 @@ import { AuthStore } from '../core/auth-store';
           <a routerLink="/planning" routerLinkActive="active">Planning</a>
           <a routerLink="/bibliotheque" routerLinkActive="active">Bibliothèque</a>
           <a routerLink="/messages" routerLinkActive="active">Messages</a>
+          <a routerLink="/integrations" routerLinkActive="active">Intégrations</a>
         </nav>
         <div class="footer">
           <div class="who">

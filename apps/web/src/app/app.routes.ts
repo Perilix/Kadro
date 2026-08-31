@@ -32,6 +32,10 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/me-planning.page').then((m) => m.MePlanningPage),
       },
       {
+        path: 'progression',
+        loadComponent: () => import('./pages/me-progression.page').then((m) => m.MeProgressionPage),
+      },
+      {
         path: 'messages',
         loadComponent: () => import('./pages/messages.page').then((m) => m.MessagesPage),
       },
@@ -73,6 +77,10 @@ export const routes: Routes = [
       {
         path: 'messages',
         loadComponent: () => import('./pages/messages.page').then((m) => m.MessagesPage),
+      },
+      {
+        path: 'integrations',
+        loadComponent: () => import('./pages/integrations.page').then((m) => m.IntegrationsPage),
       },
     ],
   },

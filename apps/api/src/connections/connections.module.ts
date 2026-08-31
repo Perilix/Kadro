@@ -6,6 +6,7 @@ import { UsersModule } from '../users/users.module';
 import { ConnectionsController } from './connections.controller';
 import { ConnectionsService } from './connections.service';
 import { DeviceConnection, DeviceConnectionSchema } from './device-connection.schema';
+import { PolarService } from './polar.service';
 import { StravaService } from './strava.service';
 import { WebhookEvent, WebhookEventSchema } from './webhook-event.schema';
 import { WebhooksController } from './webhooks.controller';
@@ -21,6 +22,6 @@ import { WebhooksController } from './webhooks.controller';
     UsersModule,
   ],
   controllers: [ConnectionsController, WebhooksController],
-  providers: [ConnectionsService, StravaService],
+  providers: [ConnectionsService, StravaService, PolarService],
 })
 export class ConnectionsModule {}

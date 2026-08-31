@@ -24,4 +24,11 @@ export class WebhooksController {
     void this.connections.handleStravaWebhook(body);
     return { ok: true };
   }
+
+  @Post('polar')
+  @HttpCode(200)
+  async receivePolar(@Body() body: Record<string, unknown>): Promise<{ ok: true }> {
+    void this.connections.handlePolarWebhook(body);
+    return { ok: true };
+  }
 }

@@ -16,7 +16,9 @@ import { Athlete } from '../athletes/athlete.schema';
 import { decryptToken, encryptToken } from '../common/token-crypto';
 import { UsersService } from '../users/users.service';
 import { DeviceConnection, DeviceConnectionDocument } from './device-connection.schema';
-import { StravaService, StravaTokens } from './strava.service';
+import { PolarService } from './polar.service';
+import { StravaService } from './strava.service';
+import type { MappedActivity } from './strava.service';
 import { WebhookEvent } from './webhook-event.schema';
 
 interface OauthState {
@@ -35,6 +37,7 @@ export class ConnectionsService {
     @InjectModel(WebhookEvent.name) private readonly events: Model<WebhookEvent>,
     @InjectModel(Athlete.name) private readonly athletes: Model<Athlete>,
     private readonly strava: StravaService,
+    private readonly polar: PolarService,
     private readonly activities: ActivitiesService,
     private readonly users: UsersService,
     private readonly config: ConfigService,
@@ -47,19 +50,23 @@ export class ConnectionsService {
   }
 
   authorize(athleteId: Types.ObjectId, provider: string, platform: 'mobile' | 'web'): { url: string } {
-    if (provider !== 'strava') {
+    if (provider !== 'strava' && provider !== 'polar') {
       throw new NotImplementedException({ code: 'connection.provider_not_supported' });
     }
     const state = this.jwt.sign(
-      { athleteId: athleteId.toString(), provider, type: 'oauth_state', platform } satisfies OauthState,
+      { athleteId: athleteId.toString(), provider: provider as Provider, type: 'oauth_state', platform } satisfies OauthState,
       { secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'), expiresIn: '10m' },
     );
-    return { url: this.strava.authorizeUrl(state) };
+    return {
+      url: provider === 'strava' ? this.strava.authorizeUrl(state) : this.polar.authorizeUrl(state),
+    };
   }
 
   async handleCallback(provider: string, code: string | undefined, state: string | undefined): Promise<string> {
     let redirect = this.config.getOrThrow<string>('MOBILE_REDIRECT_URL');
-    if (provider !== 'strava' || !code || !state) return `${redirect}?status=error`;
+    if ((provider !== 'strava' && provider !== 'polar') || !code || !state) {
+      return `${redirect}?status=error`;
+    }
     let payload: OauthState;
     try {
       payload = this.jwt.verify<OauthState>(state, {
@@ -75,12 +82,29 @@ export class ConnectionsService {
     const athlete = await this.athletes.findById(payload.athleteId).exec();
     if (!athlete) return `${redirect}?status=error`;
 
-    const tokens = await this.strava.exchangeCode(code);
-    const connection = await this.upsertConnection(athlete._id, athlete.teamId, 'strava', tokens);
+    let connection: DeviceConnectionDocument;
+    if (provider === 'strava') {
+      const tokens = await this.strava.exchangeCode(code);
+      connection = await this.upsertConnection(athlete._id, athlete.teamId, 'strava', {
+        ...tokens,
+        capabilities: { pushWorkout: false, pullActivities: true, pullSleep: false, pullHrv: false, pullWeight: false },
+      });
+    } else {
+      const tokens = await this.polar.exchangeCode(code);
+      await this.polar.registerUser(tokens.accessToken, athlete._id.toString()).catch(() => undefined);
+      connection = await this.upsertConnection(athlete._id, athlete.teamId, 'polar', {
+        accessToken: tokens.accessToken,
+        refreshToken: null,
+        expiresAt: tokens.expiresAt,
+        externalUserId: tokens.externalUserId,
+        scopes: ['accesslink.read_all'],
+        capabilities: { pushWorkout: false, pullActivities: true, pullSleep: true, pullHrv: true, pullWeight: false },
+      });
+    }
     await this.syncConnection(connection).catch((err) =>
-      this.logger.warn(`sync initiale strava échouée : ${String(err)}`),
+      this.logger.warn(`sync initiale ${provider} échouée : ${String(err)}`),
     );
-    return `${redirect}?status=connected&provider=strava`;
+    return `${redirect}?status=connected&provider=${provider}`;
   }
 
   async disconnect(athleteId: Types.ObjectId, provider: string): Promise<void> {
@@ -88,6 +112,10 @@ export class ConnectionsService {
     if (!doc) throw new NotFoundException({ code: 'connection.not_found' });
     if (provider === 'strava') {
       await this.strava.deauthorize(this.decrypt(doc.accessTokenEnc)).catch(() => undefined);
+    } else if (provider === 'polar') {
+      await this.polar
+        .deauthorize(this.decrypt(doc.accessTokenEnc), doc.externalUserId)
+        .catch(() => undefined);
     }
     doc.status = 'revoked';
     doc.isPrimaryPush = false;
@@ -192,24 +220,69 @@ export class ConnectionsService {
 
   private async syncConnection(connection: DeviceConnectionDocument): Promise<void> {
     const token = await this.freshAccessToken(connection);
-    const after = Math.floor((connection.lastSyncAt?.getTime() ?? Date.now() - 30 * 24 * 3600 * 1000) / 1000);
-    const activities = await this.strava.fetchActivities(token, after);
-    for (const activity of activities) {
-      await this.importActivity(connection, this.strava.mapActivity(activity));
+    let mapped: MappedActivity[];
+    if (connection.provider === 'strava') {
+      const after = Math.floor(
+        (connection.lastSyncAt?.getTime() ?? Date.now() - 30 * 24 * 3600 * 1000) / 1000,
+      );
+      mapped = (await this.strava.fetchActivities(token, after)).map((a) => this.strava.mapActivity(a));
+    } else {
+      mapped = (await this.polar.fetchExercises(token)).map((e) => this.polar.mapExercise(e));
+    }
+    for (const activity of mapped) {
+      await this.importActivity(connection, activity);
     }
     connection.lastSyncAt = new Date();
     connection.lastError = null;
     await connection.save();
   }
 
-  private async importActivity(
-    connection: DeviceConnectionDocument,
-    mapped: ReturnType<StravaService['mapActivity']>,
-  ): Promise<void> {
+  async handlePolarWebhook(body: {
+    event?: string;
+    user_id?: number;
+    entity_id?: string;
+    timestamp?: string;
+    url?: string;
+  }): Promise<void> {
+    if (body.event !== 'EXERCISE' || !body.entity_id) return;
+    const eventId = `${body.entity_id}:${body.timestamp ?? ''}`;
+    try {
+      await this.events.create({ provider: 'polar', externalEventId: eventId, receivedAt: new Date() });
+    } catch {
+      return;
+    }
+    try {
+      const connection = await this.model
+        .findOne({ provider: 'polar', externalUserId: String(body.user_id), status: 'connected' })
+        .exec();
+      if (!connection) throw new Error('connection inconnue');
+      const token = await this.freshAccessToken(connection);
+      const exercise = body.url
+        ? await this.polar.fetchExerciseByUrl(token, body.url)
+        : (await this.polar.fetchExercises(token)).find((e) => e.id === body.entity_id);
+      if (!exercise) throw new Error('exercice introuvable');
+      await this.importActivity(connection, this.polar.mapExercise(exercise));
+      await this.events
+        .updateOne(
+          { provider: 'polar', externalEventId: eventId },
+          { $set: { status: 'processed', processedAt: new Date() } },
+        )
+        .exec();
+    } catch (err) {
+      await this.events
+        .updateOne(
+          { provider: 'polar', externalEventId: eventId },
+          { $set: { status: 'failed', error: String(err).slice(0, 300) } },
+        )
+        .exec();
+    }
+  }
+
+  private async importActivity(connection: DeviceConnectionDocument, mapped: MappedActivity): Promise<void> {
     await this.activities.importExternal({
       teamId: connection.teamId,
       athleteId: connection.athleteId,
-      source: connection.provider as 'strava',
+      source: connection.provider as 'strava' | 'polar',
       ...mapped,
     });
   }
@@ -238,7 +311,14 @@ export class ConnectionsService {
     athleteId: Types.ObjectId,
     teamId: Types.ObjectId,
     provider: Provider,
-    tokens: StravaTokens,
+    data: {
+      accessToken: string;
+      refreshToken: string | null;
+      expiresAt: Date | null;
+      externalUserId: string;
+      scopes: string[];
+      capabilities: DeviceConnection['capabilities'];
+    },
   ): Promise<DeviceConnectionDocument> {
     return this.model
       .findOneAndUpdate(
@@ -247,18 +327,12 @@ export class ConnectionsService {
           $set: {
             teamId,
             status: 'connected',
-            externalUserId: tokens.externalUserId,
-            accessTokenEnc: this.encrypt(tokens.accessToken),
-            refreshTokenEnc: this.encrypt(tokens.refreshToken),
-            tokenExpiresAt: tokens.expiresAt,
-            scopes: tokens.scopes,
-            capabilities: {
-              pushWorkout: false,
-              pullActivities: true,
-              pullSleep: false,
-              pullHrv: false,
-              pullWeight: false,
-            },
+            externalUserId: data.externalUserId,
+            accessTokenEnc: this.encrypt(data.accessToken),
+            refreshTokenEnc: data.refreshToken ? this.encrypt(data.refreshToken) : null,
+            tokenExpiresAt: data.expiresAt,
+            scopes: data.scopes,
+            capabilities: data.capabilities,
             lastError: null,
           },
         },

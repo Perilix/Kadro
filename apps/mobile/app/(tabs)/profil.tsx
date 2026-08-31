@@ -37,16 +37,16 @@ export default function ProfilScreen() {
     }, [load]),
   );
 
-  const connectStrava = async () => {
+  const connect = async (provider: string) => {
     setError(null);
     try {
-      const { url } = await api.get<AuthorizeUrl>('/connections/strava/authorize');
+      const { url } = await api.get<AuthorizeUrl>(`/connections/${provider}/authorize`);
       await Linking.openURL(url);
     } catch (err) {
       setError(
         err instanceof ApiError && err.code === 'connection.provider_not_configured'
-          ? 'Strava n’est pas encore configuré côté serveur.'
-          : 'Connexion à Strava impossible pour le moment.',
+          ? `${PROVIDER_LABELS[provider]} n’est pas encore configuré côté serveur.`
+          : `Connexion à ${PROVIDER_LABELS[provider]} impossible pour le moment.`,
       );
     }
   };
@@ -87,14 +87,17 @@ export default function ProfilScreen() {
             <Button label="Déconnecter" ghost onPress={() => void disconnect(c.provider)} />
           </View>
         ))}
-        {!connections.some((c) => c.provider === 'strava') ? (
-          <View style={{ marginTop: connections.length ? 8 : 0 }}>
-            <Button label="Connecter Strava" onPress={() => void connectStrava()} />
-          </View>
-        ) : null}
+        <View style={{ marginTop: connections.length ? 8 : 0, gap: 8 }}>
+          {!connections.some((c) => c.provider === 'strava') ? (
+            <Button label="Connecter Strava" onPress={() => void connect('strava')} />
+          ) : null}
+          {!connections.some((c) => c.provider === 'polar') ? (
+            <Button label="Connecter Polar" ghost onPress={() => void connect('polar')} />
+          ) : null}
+        </View>
         {error ? <Text style={{ color: t.bad, fontSize: 13, marginTop: 8 }}>{error}</Text> : null}
         <Text style={{ color: t.ink3, fontSize: 12, marginTop: 10 }}>
-          Garmin, COROS, Polar et Suunto arrivent — vos activités remonteront automatiquement.
+          Garmin, COROS et Suunto arrivent — vos activités remonteront automatiquement.
         </Text>
       </Card>
       <View>

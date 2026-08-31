@@ -17,6 +17,8 @@ export const zEnv = z.object({
   STRAVA_CLIENT_ID: z.string().optional(),
   STRAVA_CLIENT_SECRET: z.string().optional(),
   STRAVA_VERIFY_TOKEN: z.string().optional(),
+  POLAR_CLIENT_ID: z.string().optional(),
+  POLAR_CLIENT_SECRET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof zEnv>;

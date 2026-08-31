@@ -9,6 +9,7 @@ import { TeamsModule } from '../teams/teams.module';
 import { UsersModule } from '../users/users.module';
 import { Athlete, AthleteSchema } from './athlete.schema';
 import { AthletesController } from './athletes.controller';
+import { MeController } from './me.controller';
 import { AthletesService } from './athletes.service';
 import { Note, NoteSchema } from './note.schema';
 import { NotesService } from './notes.service';
@@ -30,7 +31,7 @@ import { TestsService } from './tests.service';
     CheckinsModule,
     AlertsModule,
   ],
-  controllers: [AthletesController],
+  controllers: [AthletesController, MeController],
   providers: [AthletesService, TestsService, NotesService],
   exports: [AthletesService],
 })

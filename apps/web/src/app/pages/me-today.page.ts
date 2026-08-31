@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import type { CheckinToday, PlannedSession, PlannedSessionDetail } from '@kadro/shared';
+import { RouterLink } from '@angular/router';
+import type { AthleteOverview, CheckinToday, Monitoring, PlannedSession, PlannedSessionDetail } from '@kadro/shared';
 import { formatPace } from '@kadro/shared';
 import { ApiClient } from '../core/api-client';
 
@@ -24,10 +25,11 @@ function todayYmd(): string {
 
 @Component({
   selector: 'app-me-today-page',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   template: `
     <h1 class="date">{{ dateLabel }}</h1>
-
+    <div class="cols">
+    <div class="main">
     <section class="card">
       <h2>Comment ça va ce matin ?</h2>
       @if (checkin()?.checkin; as c) {
@@ -95,6 +97,51 @@ function todayYmd(): string {
         </section>
       }
     }
+    </div>
+    <aside class="side">
+      @if (monitoring(); as m) {
+        <section class="card">
+          <h2>Ma forme — 7 jours</h2>
+          <div class="dots">
+            @for (day of m.days.slice(-7); track day.date) {
+              <span
+                class="dot"
+                [class.good]="day.checkinLevel === 'good'"
+                [class.warn]="day.checkinLevel === 'warn'"
+                [class.bad]="day.checkinLevel === 'bad'"
+                [title]="day.date"
+              ></span>
+            }
+          </div>
+          <div class="mrows">
+            <div class="mrow"><span class="muted">Sommeil moyen</span><strong>{{ m.summary7d.sleepAvgMin != null ? sleepLabel(m.summary7d.sleepAvgMin) : '—' }}</strong></div>
+            <div class="mrow"><span class="muted">FC repos</span><strong>{{ m.summary7d.restingHrAvgBpm != null ? m.summary7d.restingHrAvgBpm + ' bpm' : '—' }}</strong></div>
+            <div class="mrow"><span class="muted">VFC</span><strong>{{ m.summary7d.hrvAvgMs != null ? m.summary7d.hrvAvgMs + ' ms' : '—' }}</strong></div>
+          </div>
+        </section>
+      }
+      @if (overview(); as o) {
+        <section class="card">
+          <h2>Ma semaine</h2>
+          @if (o.week.length === 0) {
+            <p class="muted">Semaine libre.</p>
+          }
+          @for (s of o.week; track s.id) {
+            <div class="wrow">
+              <span class="wday muted">{{ s.date.slice(8) }}/{{ s.date.slice(5, 7) }}</span>
+              <span class="wname">{{ s.name }}</span>
+              @if (s.status === 'completed') {
+                <span class="status status-good">✓</span>
+              } @else if (s.status === 'missed') {
+                <span class="status status-bad">✕</span>
+              }
+            </div>
+          }
+          <a class="more" routerLink="/moi/progression">Voir ma progression →</a>
+        </section>
+      }
+    </aside>
+    </div>
   `,
   styles: `
     .date { text-transform: capitalize; }
@@ -117,6 +164,22 @@ function todayYmd(): string {
     .done { margin: 14px 0 0; }
     .complete { display: flex; gap: 8px; margin-top: 14px; }
     .complete .input { max-width: 140px; }
+    .cols { display: grid; grid-template-columns: 1fr 280px; gap: 16px; align-items: start; }
+    .side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 80px; }
+    .side section { margin-bottom: 0; }
+    .dots { display: flex; gap: 6px; margin-bottom: 14px; }
+    .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--neutral-soft); }
+    .dot.good { background: var(--good); }
+    .dot.warn { background: var(--warn); }
+    .dot.bad { background: var(--bad); }
+    .mrows { display: grid; gap: 8px; }
+    .mrow { display: flex; justify-content: space-between; font-size: 13px; font-variant-numeric: tabular-nums; }
+    .wrow { display: flex; align-items: baseline; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .wrow:last-of-type { border-bottom: none; }
+    .wday { font-variant-numeric: tabular-nums; min-width: 42px; }
+    .wname { flex: 1; font-weight: 500; }
+    .more { display: inline-block; margin-top: 12px; font-size: 13px; }
+    @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } .side { position: static; } }
   `,
 })
 export class MeTodayPage implements OnInit {
@@ -124,6 +187,8 @@ export class MeTodayPage implements OnInit {
   readonly feelings = FEELINGS;
   readonly checkin = signal<CheckinToday | null>(null);
   readonly session = signal<PlannedSessionDetail | null>(null);
+  readonly overview = signal<AthleteOverview | null>(null);
+  readonly monitoring = signal<Monitoring | null>(null);
   readonly loaded = signal(false);
   readonly busy = signal(false);
   durationMin: number | null = null;
@@ -144,6 +209,10 @@ export class MeTodayPage implements OnInit {
 
   pace(secPerKm: number): string {
     return formatPace(secPerKm);
+  }
+
+  sleepLabel(minutes: number): string {
+    return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`;
   }
 
   async submitCheckin(feeling: number): Promise<void> {
@@ -168,11 +237,15 @@ export class MeTodayPage implements OnInit {
 
   private async load(): Promise<void> {
     const today = todayYmd();
-    const [checkin, sessions] = await Promise.all([
+    const [checkin, sessions, overview, monitoring] = await Promise.all([
       this.api.get<CheckinToday>('/me/checkin-today'),
       this.api.get<PlannedSession[]>(`/sessions?from=${today}&to=${today}`),
+      this.api.get<AthleteOverview>('/me/overview'),
+      this.api.get<Monitoring>('/me/monitoring?weeks=1'),
     ]);
     this.checkin.set(checkin);
+    this.overview.set(overview);
+    this.monitoring.set(monitoring);
     this.session.set(
       sessions[0] ? await this.api.get<PlannedSessionDetail>(`/sessions/${sessions[0].id}`) : null,
     );
