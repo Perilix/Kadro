@@ -132,9 +132,12 @@ export default function AssignerScreen() {
               </Pressable>
             ))}
             {templates.length === 0 ? (
-              <Text style={{ color: t.ink2, fontSize: 13 }}>
-                Aucun modèle — créez vos séances depuis l'app web (Bibliothèque).
-              </Text>
+              <View style={{ gap: 8 }}>
+                <Text style={{ color: t.ink2, fontSize: 13 }}>Aucun modèle pour l'instant.</Text>
+                <Pressable onPress={() => router.replace('/creer-seance')} style={{ paddingVertical: 4 }}>
+                  <Text style={{ color: t.accentInk, fontSize: 13, fontWeight: '600' }}>Créer une séance →</Text>
+                </Pressable>
+              </View>
             ) : null}
           </View>
         </Card>

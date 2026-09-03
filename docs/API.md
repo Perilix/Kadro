@@ -183,6 +183,9 @@ Le webhook Stripe met à jour `teams.subscription` ; le compteur `extraAthletes`
 | GET | `/notifications` | `?kind&cursor` | `zPage<zNotification>` |
 | POST | `/notifications/read` | `{ ids?: ObjectId[] }` | 204 (sans `ids` : tout) |
 | POST | `/me/push-tokens` | `{ expoToken, platform }` | 204 |
+| DELETE | `/me/push-tokens/:expoToken` | — | 204 |
+
+À chaque notification créée, l'API émet `notification.new` sur le WebSocket et envoie une push Expo (API `exp.host`, batch de 100, tokens `DeviceNotRegistered` purgés) aux appareils enregistrés du destinataire si `notificationPrefs.push` est actif.
 
 ## Jobs planifiés (`@nestjs/schedule`)
 

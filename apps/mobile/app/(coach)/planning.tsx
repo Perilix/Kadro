@@ -98,8 +98,9 @@ export default function CoachPlanningScreen() {
               {daySessions.map((s) => {
                 const c = chipColors(s, isToday);
                 return (
-                  <View
+                  <Pressable
                     key={s.id}
+                    onPress={() => router.push({ pathname: '/session/[id]', params: { id: s.id } })}
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
@@ -119,7 +120,7 @@ export default function CoachPlanningScreen() {
                         {s.status === 'completed' ? ' · réalisée' : s.status === 'missed' ? ' · manquée' : ''}
                       </Text>
                     </View>
-                  </View>
+                  </Pressable>
                 );
               })}
               {daySessions.length === 0 ? (
@@ -134,7 +135,7 @@ export default function CoachPlanningScreen() {
       <View style={{ height: 60 }} />
     </ScrollView>
     <Pressable
-      onPress={() => router.push('/assigner')}
+      onPress={() => router.push('/creer-seance')}
       style={{
         position: 'absolute',
         right: 20,

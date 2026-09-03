@@ -98,6 +98,10 @@ export const routes: Routes = [
         path: 'equipe',
         loadComponent: () => import('./pages/team.page').then((m) => m.TeamPage),
       },
+      {
+        path: 'tarifs',
+        loadComponent: () => import('./pages/pricing.page').then((m) => m.PricingPage),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

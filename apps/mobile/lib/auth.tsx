@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { AthleteSummary, AuthSession, Join, Me, User } from '@kadro/shared';
 import { api } from './api';
+import { unregisterPush } from './push';
+import { disconnectRealtime } from './realtime';
 
 interface AuthState {
   ready: boolean;
@@ -55,6 +57,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    await unregisterPush();
+    disconnectRealtime();
     await api.post('/auth/logout').catch(() => undefined);
     await api.clearTokens();
     setUser(null);

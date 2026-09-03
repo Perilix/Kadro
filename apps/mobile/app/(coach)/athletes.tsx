@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { AthleteListItem, Page } from '@kadro/shared';
+import type { AthleteListItem, Group, Page } from '@kadro/shared';
 import { api } from '../../lib/api';
 import { radius, useTheme } from '../../lib/theme';
 import { Card, Input, StatusPill } from '../../lib/ui';
@@ -11,14 +11,20 @@ export default function CoachAthletesScreen() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const [roster, setRoster] = useState<AthleteListItem[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'attention'>('all');
+  const [groupId, setGroupId] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       void api
         .get<Page<AthleteListItem>>('/athletes?limit=100&sort=form')
         .then((p) => setRoster(p.items))
+        .catch(() => undefined);
+      void api
+        .get<Group[]>('/groups')
+        .then(setGroups)
         .catch(() => undefined);
     }, []),
   );
@@ -27,15 +33,17 @@ export default function CoachAthletesScreen() {
     const q = query.trim().toLowerCase();
     return roster.filter((a) => {
       if (filter === 'attention' && a.formStatus !== 'warn' && a.formStatus !== 'bad') return false;
+      if (groupId && !a.groupIds.includes(groupId)) return false;
       if (q && !`${a.firstName} ${a.lastName}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [roster, query, filter]);
+  }, [roster, query, filter, groupId]);
 
   const attention = roster.filter((a) => a.formStatus === 'warn' || a.formStatus === 'bad').length;
 
-  const chip = (label: string, on: boolean, onPress: () => void) => (
+  const chip = (label: string, on: boolean, onPress: () => void, key?: string) => (
     <Pressable
+      key={key}
       onPress={onPress}
       style={{
         height: 32,
@@ -55,10 +63,18 @@ export default function CoachAthletesScreen() {
     <ScrollView contentContainerStyle={{ padding: 16, paddingTop: insets.top + 12, gap: 14 }}>
       <Text style={{ color: t.ink, fontSize: 28, fontWeight: '600', letterSpacing: -0.5 }}>Athlètes</Text>
       <Input value={query} onChangeText={setQuery} placeholder="Rechercher" />
-      <View style={{ flexDirection: 'row', gap: 8 }}>
-        {chip(`Tous · ${roster.length}`, filter === 'all', () => setFilter('all'))}
-        {chip(`À traiter · ${attention}`, filter === 'attention', () => setFilter('attention'))}
-      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        {chip(`Tous · ${roster.length}`, filter === 'all' && groupId == null, () => {
+          setFilter('all');
+          setGroupId(null);
+        })}
+        {chip(`À traiter · ${attention}`, filter === 'attention', () => {
+          setFilter((f) => (f === 'attention' ? 'all' : 'attention'));
+        })}
+        {groups.map((g) =>
+          chip(g.name, groupId === g.id, () => setGroupId((current) => (current === g.id ? null : g.id)), g.id),
+        )}
+      </ScrollView>
       <Card style={{ padding: 0, overflow: 'hidden' }}>
         {filtered.map((a, i) => (
           <Pressable

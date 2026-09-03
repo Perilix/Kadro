@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Conversation } from '@kadro/shared';
 import { api } from '../../lib/api';
+import { onMessage } from '../../lib/realtime';
 import { useTheme } from '../../lib/theme';
 import { Card } from '../../lib/ui';
 
@@ -14,12 +15,10 @@ export default function CoachMessagesScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void api.get<Conversation[]>('/conversations').then(setConversations).catch(() => undefined);
-      const timer = setInterval(
-        () => void api.get<Conversation[]>('/conversations').then(setConversations).catch(() => undefined),
-        15_000,
-      );
-      return () => clearInterval(timer);
+      const refresh = () =>
+        void api.get<Conversation[]>('/conversations').then(setConversations).catch(() => undefined);
+      refresh();
+      return onMessage(() => refresh());
     }, []),
   );
 

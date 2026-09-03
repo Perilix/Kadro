@@ -10,12 +10,14 @@ import type {
 import { decodeCursor, encodeCursor } from '../common/cursor';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { Notification, NotificationDocument, NotificationRefs } from './notification.schema';
+import { PushService } from './push.service';
 
 @Injectable()
 export class NotificationsService {
   constructor(
     @InjectModel(Notification.name) private readonly model: Model<Notification>,
     private readonly realtime: RealtimeGateway,
+    private readonly push: PushService,
   ) {}
 
   async notify(
@@ -26,7 +28,13 @@ export class NotificationsService {
     refs: NotificationRefs = {},
   ): Promise<void> {
     const doc = await this.model.create({ userId, kind, i18nKey, params, refs });
-    this.realtime.emitToUser(userId.toString(), 'notification.new', toNotificationDto(doc));
+    const dto = toNotificationDto(doc);
+    this.realtime.emitToUser(userId.toString(), 'notification.new', dto);
+    const data: Record<string, string> = { kind };
+    for (const [key, value] of Object.entries(dto.refs)) {
+      if (value) data[key] = value;
+    }
+    void this.push.sendToUser(userId, kind, i18nKey, params, data);
   }
 
   async list(userId: Types.ObjectId, query: NotificationsQuery): Promise<Page<NotificationDto>> {

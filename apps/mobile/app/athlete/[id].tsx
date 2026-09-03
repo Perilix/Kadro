@@ -217,8 +217,9 @@ export default function CoachAthleteScreen() {
             <Card style={{ padding: 0, overflow: 'hidden' }}>
               <Text style={{ color: t.ink, fontSize: 15, fontWeight: '600', padding: 14 }}>Dernières séances</Text>
               {(overview?.recentSessions ?? []).map((s) => (
-                <View
+                <Pressable
                   key={s.id}
+                  onPress={() => router.push({ pathname: '/activite/[id]', params: { id: s.id } })}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, paddingHorizontal: 14, borderTopWidth: 1, borderTopColor: t.line }}
                 >
                   <View style={{ flex: 1, minWidth: 0 }}>
@@ -231,7 +232,8 @@ export default function CoachAthleteScreen() {
                       {s.feedbackRpe != null ? ` · RPE ${s.feedbackRpe}` : ''}
                     </Text>
                   </View>
-                </View>
+                  <Text style={{ color: t.ink3, fontSize: 16 }}>›</Text>
+                </Pressable>
               ))}
               {(overview?.recentSessions ?? []).length === 0 ? (
                 <Text style={{ color: t.ink2, fontSize: 13, padding: 14, paddingTop: 0 }}>Aucune activité pour l'instant.</Text>

@@ -447,6 +447,7 @@ export class ActivitiesService {
       ? await this.planned.findById(doc.plannedSessionId).exec()
       : null;
     const comparison = await this.findComparison(doc, planned);
+    const athlete = await this.athletes.findById(doc.athleteId, { 'profile.hrMaxBpm': 1 }).exec();
     return {
       ...toListItem(doc, planned?.name ?? null),
       deviceName: doc.deviceName,
@@ -473,6 +474,7 @@ export class ActivitiesService {
         ? { ...doc.feedback, submittedAt: doc.feedback.submittedAt.toISOString() }
         : null,
       expectedDifficulty: planned?.expectedDifficulty ?? null,
+      athleteHrMaxBpm: athlete?.profile?.hrMaxBpm ?? null,
       comparison,
     };
   }

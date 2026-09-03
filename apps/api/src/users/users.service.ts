@@ -36,6 +36,10 @@ export class UsersService {
       .exec();
   }
 
+  async removePushToken(userId: Types.ObjectId, expoToken: string): Promise<void> {
+    await this.model.updateOne({ _id: userId }, { $pull: { pushTokens: { expoToken } } }).exec();
+  }
+
   async touchLogin(userId: Types.ObjectId): Promise<void> {
     await this.model.updateOne({ _id: userId }, { $set: { lastLoginAt: new Date() } }).exec();
   }

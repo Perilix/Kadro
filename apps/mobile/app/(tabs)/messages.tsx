@@ -1,10 +1,11 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { FlatList, KeyboardAvoidingView, Platform, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Conversation, Message, Page } from '@kadro/shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
+import { onMessage, onRead } from '../../lib/realtime';
 import { radius, useTheme } from '../../lib/theme';
 import { Button, Input } from '../../lib/ui';
 
@@ -32,10 +33,27 @@ export default function MessagesScreen() {
   useFocusEffect(
     useCallback(() => {
       void load();
-      const timer = setInterval(() => void load(), 10_000);
-      return () => clearInterval(timer);
     }, [load]),
   );
+
+  const conversationId = conversation?.id;
+
+  useEffect(() => {
+    if (!conversationId) return;
+    const offMessage = onMessage((m) => {
+      if (m.conversationId !== conversationId) return;
+      setMessages((list) => (list.some((x) => x.id === m.id) ? list : [...list, m]));
+      void api.post(`/conversations/${conversationId}/read`).catch(() => undefined);
+    });
+    const offRead = onRead((r) => {
+      if (r.conversationId !== conversationId) return;
+      setMessages((list) => list.map((m) => (m.readAt ? m : { ...m, readAt: new Date().toISOString() })));
+    });
+    return () => {
+      offMessage();
+      offRead();
+    };
+  }, [conversationId]);
 
   const send = async () => {
     if (!conversation || !draft.trim()) return;

@@ -32,6 +32,7 @@ envoi sur montre → réalisé → check-in de forme → alertes « À traiter �
     push: boolean, email: boolean,
     checkinReminder: string | null,   // 'HH:mm' local, athlète — ex. '07:30'
   },
+  pushTokens: [{ expoToken: string, platform: 'ios' | 'android', addedAt: Date }],
   refreshTokenHash: string | null,
   createdAt: Date, lastLoginAt: Date | null,
 }

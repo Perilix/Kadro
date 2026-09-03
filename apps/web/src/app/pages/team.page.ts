@@ -140,6 +140,10 @@ const STATUS_LABELS: Record<string, string> = {
           @if (b.plan !== 'trial' && b.checkoutAvailable) {
             <button class="btn small top" type="button" (click)="portal()">Gérer mon abonnement · factures, carte</button>
           }
+          <div class="row setting top">
+            <span class="grow">Le détail des offres et ce qui est inclus</span>
+            <a class="btn small" routerLink="/tarifs">Voir les tarifs</a>
+          </div>
           @if (!b.checkoutAvailable) {
             <p class="faint tiny top2">Le paiement en ligne arrive — l'essai continue en attendant.</p>
           }

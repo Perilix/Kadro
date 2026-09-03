@@ -10,6 +10,7 @@ import {
   targetTimeSec,
 } from './pace';
 import { epley1Rm, loadFromPctRm, tonnageKg } from './strength';
+import { ascentSpeedMPerH, gapPaceSecPerKm, gradeCostFactor, hrTimeInZonesSec } from './trail';
 import { acuteChronicRatio, sessionLoadUa } from './load';
 import { checkinLevel } from './checkin';
 import { estimateRunDurationSec, estimateStrengthDurationSec, resolveRunPaces } from './resolve';
@@ -133,5 +134,53 @@ describe('check-in → niveau de forme', () => {
     expect(checkinLevel(3)).toBe('warn');
     expect(checkinLevel(4)).toBe('good');
     expect(checkinLevel(5)).toBe('good');
+  });
+});
+
+describe('trail → allure ajustée à la pente', () => {
+  it('terrain plat : facteur 1, allure inchangée', () => {
+    expect(gradeCostFactor(0)).toBe(1);
+    expect(gapPaceSecPerKm(300, 0)).toBe(300);
+  });
+  it('10 % de montée à 6:00 /km → GAP 4:03 /km', () => {
+    expect(gradeCostFactor(10)).toBeCloseTo(1.48);
+    expect(formatPace(gapPaceSecPerKm(360, 10))).toBe('4:03 /km');
+  });
+  it('−5 % de descente : le GAP est plus lent que l’allure réelle', () => {
+    expect(gapPaceSecPerKm(300, -5)).toBeGreaterThan(300);
+  });
+  it('une descente raide coûte plus qu’une descente douce', () => {
+    expect(gradeCostFactor(-20)).toBeGreaterThan(gradeCostFactor(-8));
+  });
+  it('pente bornée à ±30 %', () => {
+    expect(gradeCostFactor(60)).toBe(gradeCostFactor(30));
+    expect(gradeCostFactor(-60)).toBe(gradeCostFactor(-30));
+  });
+  it('rejette une allure invalide', () => {
+    expect(() => gapPaceSecPerKm(0, 5)).toThrow(RangeError);
+  });
+});
+
+describe('trail → vitesse ascensionnelle', () => {
+  it('850 m de D+ en 1 h 30 → 567 m/h', () => {
+    expect(ascentSpeedMPerH(850, 5400)).toBe(567);
+  });
+  it('rejette les entrées invalides', () => {
+    expect(() => ascentSpeedMPerH(-10, 3600)).toThrow(RangeError);
+    expect(() => ascentSpeedMPerH(100, 0)).toThrow(RangeError);
+  });
+});
+
+describe('flux FC → temps par zone', () => {
+  it('répartit les échantillons sur Z1–Z5 avec FC max 192', () => {
+    expect(hrTimeInZonesSec([0, 60, 120, 180], [120, 150, 170, 185], 192)).toEqual([
+      60, 60, 0, 60, 60,
+    ]);
+  });
+  it('ignore les échantillons sans FC', () => {
+    expect(hrTimeInZonesSec([0, 60, 120], [null, 150, null], 192)).toEqual([0, 60, 0, 0, 0]);
+  });
+  it('rejette une FC max invalide', () => {
+    expect(() => hrTimeInZonesSec([0], [150], 0)).toThrow(RangeError);
   });
 });

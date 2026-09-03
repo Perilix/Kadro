@@ -20,3 +20,4 @@ export * from './rules/load';
 export * from './rules/checkin';
 export * from './rules/resolve';
 export * from './rules/billing';
+export * from './rules/trail';

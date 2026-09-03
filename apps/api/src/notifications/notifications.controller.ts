@@ -1,4 +1,15 @@
-import { Body, Controller, Get, HttpCode, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { Types } from 'mongoose';
 import {
   zNotificationsQuery,
@@ -49,5 +60,17 @@ export class NotificationsController {
     @Body(new ZodValidationPipe(zPushTokenCreate)) dto: PushTokenCreate,
   ): Promise<void> {
     await this.users.addPushToken(new Types.ObjectId(user.sub), dto.expoToken, dto.platform);
+  }
+
+  @Delete('me/push-tokens/:expoToken')
+  @HttpCode(204)
+  async removePushToken(
+    @CurrentUser() user: JwtPayload,
+    @Param('expoToken') expoToken: string,
+  ): Promise<void> {
+    if (!expoToken || expoToken.length > 200) {
+      throw new BadRequestException({ code: 'push_token.invalid' });
+    }
+    await this.users.removePushToken(new Types.ObjectId(user.sub), expoToken);
   }
 }

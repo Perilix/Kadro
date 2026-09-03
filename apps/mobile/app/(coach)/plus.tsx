@@ -72,7 +72,17 @@ export default function CoachPlusScreen() {
       </Card>
 
       <Card style={{ padding: 0, overflow: 'hidden' }}>
-        {row('Bibliothèque & éditeur de séance', 'Disponibles sur le web — kadro-web.onrender.com')}
+        <Pressable
+          onPress={() => router.push('/creer-seance')}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingHorizontal: 16 }}
+        >
+          <View style={{ flex: 1, paddingVertical: 8 }}>
+            <Text style={{ color: t.ink, fontSize: 15, fontWeight: '500' }}>Créer une séance</Text>
+            <Text style={{ color: t.ink3, fontSize: 12, marginTop: 1 }}>Course ou muscu · assignation directe</Text>
+          </View>
+          <Text style={{ color: t.ink3, fontSize: 18 }}>›</Text>
+        </Pressable>
+        {row('Assigner un modèle', 'Depuis la bibliothèque', () => router.push('/assigner'))}
         {row('Abonnement & réglages', "Gérés depuis l'app web (Équipe & réglages)")}
       </Card>
 

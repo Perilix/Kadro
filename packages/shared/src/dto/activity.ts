@@ -113,6 +113,7 @@ export const zActivityDetail = zActivityListItem.omit({ feedbackRpe: true }).ext
     .nullable(),
   feedback: zActivityFeedback.nullable(),
   expectedDifficulty: z.number().nullable(),
+  athleteHrMaxBpm: z.number().nullable(),
   comparison: zActivityComparison.nullable(),
 });
 export type ActivityDetail = z.infer<typeof zActivityDetail>;

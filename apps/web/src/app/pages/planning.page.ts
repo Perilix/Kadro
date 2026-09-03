@@ -26,6 +26,14 @@ function addDays(date: Date, days: number): Date {
   return d;
 }
 
+function firstOfMonth(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+}
+
+function addMonths(date: Date, months: number): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1));
+}
+
 @Component({
   selector: 'app-planning-page',
   imports: [FormsModule, RouterLink, AvatarComponent, IconComponent],
@@ -33,12 +41,20 @@ function addDays(date: Date, days: number): Date {
     <header class="row head">
       <div class="head-txt">
         <h1>Planning</h1>
-        <div class="muted sub">Semaine du {{ weekStartLabel() }} · {{ doneCount() }} / {{ sessions().length }} séances réalisées</div>
+        @if (view() === 'week') {
+          <div class="muted sub">Semaine du {{ weekStartLabel() }} · {{ doneCount() }} / {{ sessions().length }} séances réalisées</div>
+        } @else {
+          <div class="muted sub">{{ monthLabel() }} · {{ monthAthleteName() }} · {{ monthSessions().length }} séance{{ monthSessions().length > 1 ? 's' : '' }}</div>
+        }
+      </div>
+      <div class="row seg">
+        <button class="seg-btn" type="button" [class.on]="view() === 'week'" (click)="setView('week')">Semaine</button>
+        <button class="seg-btn" type="button" [class.on]="view() === 'month'" (click)="setView('month')">Mois</button>
       </div>
       <div class="row nav-week">
-        <button class="icon-btn" type="button" (click)="shiftWeek(-1)"><ui-icon name="chevronL" [size]="18" /></button>
+        <button class="icon-btn" type="button" (click)="shift(-1)"><ui-icon name="chevronL" [size]="18" /></button>
         <button class="btn" type="button" (click)="goToday()">Aujourd'hui</button>
-        <button class="icon-btn" type="button" (click)="shiftWeek(1)"><ui-icon name="chevron" [size]="18" /></button>
+        <button class="icon-btn" type="button" (click)="shift(1)"><ui-icon name="chevron" [size]="18" /></button>
       </div>
       <button class="btn" type="button" (click)="assignOpen.set(!assignOpen())"><ui-icon name="layers" [size]="18" />Assigner un modèle</button>
       <a class="btn primary" routerLink="/bibliotheque/nouvelle"><ui-icon name="plus" [size]="18" [sw]="2" />Nouvelle séance</a>
@@ -120,6 +136,53 @@ function addDays(date: Date, days: number): Date {
         </div>
       </section>
     }
+    @if (view() === 'month') {
+      <div class="row month-bar">
+        <select class="input m-athlete" [ngModel]="monthAthleteId()" (ngModelChange)="setMonthAthlete($event)">
+          @for (a of roster(); track a.id) {
+            <option [value]="a.id">{{ a.firstName }} {{ a.lastName }}</option>
+          }
+        </select>
+        <span class="muted" style="font-size: 12.5px">Une vue d'ensemble du mois pour un athlète — cliquez une séance pour la déplacer ou la supprimer.</span>
+      </div>
+      <section class="card month-card">
+        <div class="month-head">
+          @for (d of dayNames; track d) {
+            <div class="mh-cell">{{ d }}</div>
+          }
+        </div>
+        @for (week of monthWeeks(); track week.key) {
+          <div class="month-week">
+            @for (day of week.days; track day.date) {
+              <div class="m-cell" [class.out]="day.outside" [class.today-cell]="day.today">
+                <span class="num m-num" [class.m-today]="day.today">{{ day.dayOfMonth }}</span>
+                @for (s of day.sessions; track s.id) {
+                  <div class="chip row" [class]="'chip row st-' + monthChipState(s, day)" style="padding: 4px 7px; font-size: 11px" (click)="openSession(s)">
+                    @if (s.status === 'completed') {
+                      <ui-icon name="check" [size]="12" [sw]="2.25" style="color: var(--good)" />
+                    } @else if (s.status === 'missed') {
+                      <ui-icon name="x" [size]="12" [sw]="2.25" style="color: var(--bad)" />
+                    } @else {
+                      <ui-icon [name]="s.type === 'strength' ? 'dumbbell' : 'run'" [size]="12" />
+                    }
+                    <span class="ellip">{{ s.name }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+        @if (roster().length === 0) {
+          <p class="muted empty">Vos athlètes apparaîtront ici dès qu'ils auront rejoint l'équipe.</p>
+        }
+        <div class="row legend">
+          <span class="row lg"><span class="sw st-completed"><ui-icon name="check" [size]="10" [sw]="2.5" style="color: var(--good)" /></span>Réalisée</span>
+          <span class="row lg"><span class="sw st-today"></span>Aujourd'hui</span>
+          <span class="row lg"><span class="sw st-planned"></span>Prévue</span>
+          <span class="row lg"><span class="sw st-missed"></span>Manquée</span>
+        </div>
+      </section>
+    } @else {
     <section class="card grid-card">
       <div class="matrix head-row">
         <div class="corner"></div>
@@ -172,12 +235,29 @@ function addDays(date: Date, days: number): Date {
         <span class="row lg"><span class="sw st-missed"></span>Manquée</span>
       </div>
     </section>
+    }
   `,
   styles: `
     .head { gap: 12px; }
     .head-txt { flex: 1 1 auto; }
     .sub { margin-top: 4px; }
     .nav-week { gap: 4px; }
+    .seg { border: 1px solid var(--line-strong); border-radius: 10px; overflow: hidden; height: 40px; }
+    .seg-btn { height: 100%; padding: 0 14px; border: none; background: transparent; font-family: inherit; font-size: 13.5px; font-weight: 500; color: var(--ink2); cursor: pointer; }
+    .seg-btn.on { background: var(--nav-active); color: var(--ink); }
+    .month-bar { gap: 12px; }
+    .m-athlete { max-width: 260px; }
+    .month-card { overflow: hidden; }
+    .month-head, .month-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+    .month-head { background: var(--surface2); }
+    .mh-cell { padding: 8px 10px; font-size: 12px; font-weight: 500; color: var(--ink2); }
+    .m-cell { border-top: 1px solid var(--line); padding: 8px; min-height: 92px; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+    .mh-cell + .mh-cell, .m-cell + .m-cell { border-left: 1px solid var(--line); }
+    .out { background: var(--surface2); }
+    .out .m-num { color: var(--ink3); }
+    .today-cell { background: var(--accent-soft); }
+    .m-num { font-size: 12.5px; font-weight: 500; }
+    .m-today { font-weight: 700; color: var(--accent-ink); }
     .assign { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
     .a-row { gap: 10px; }
     .a-tpl { max-width: 340px; }
@@ -236,7 +316,12 @@ function addDays(date: Date, days: number): Date {
 export class PlanningPage implements OnInit {
   private readonly api = inject(ApiClient);
 
+  readonly view = signal<'week' | 'month'>('week');
   readonly weekStart = signal(mondayOf(new Date()));
+  readonly monthAnchor = signal(firstOfMonth(new Date()));
+  readonly monthAthleteId = signal('');
+  readonly monthSessions = signal<PlannedSession[]>([]);
+  readonly dayNames = DAY_NAMES;
   readonly sessions = signal<PlannedSession[]>([]);
   readonly roster = signal<AthleteListItem[]>([]);
   readonly templates = signal<SessionTemplate[]>([]);
@@ -262,6 +347,35 @@ export class PlanningPage implements OnInit {
   readonly weekStartLabel = computed(() =>
     new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(this.weekStart()),
   );
+  readonly monthLabel = computed(() => {
+    const label = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(this.monthAnchor());
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  });
+  readonly monthAthleteName = computed(() => this.athleteName(this.monthAthleteId()));
+  readonly monthWeeks = computed(() => {
+    const anchor = this.monthAnchor();
+    const month = anchor.getUTCMonth();
+    const today = ymd(new Date());
+    const sessions = this.monthSessions();
+    const start = mondayOf(anchor);
+    const end = mondayOf(addDays(addMonths(anchor, 1), -1));
+    const weeks: { key: string; days: { date: string; dayOfMonth: number; outside: boolean; today: boolean; sessions: PlannedSession[] }[] }[] = [];
+    for (let w = start; w.getTime() <= end.getTime(); w = addDays(w, 7)) {
+      const days = Array.from({ length: 7 }, (_, i) => {
+        const d = addDays(w, i);
+        const date = ymd(d);
+        return {
+          date,
+          dayOfMonth: d.getUTCDate(),
+          outside: d.getUTCMonth() !== month,
+          today: date === today,
+          sessions: sessions.filter((s) => s.date === date),
+        };
+      });
+      weeks.push({ key: days[0].date, days });
+    }
+    return weeks;
+  });
 
   private readonly route = inject(ActivatedRoute);
 
@@ -271,6 +385,7 @@ export class PlanningPage implements OnInit {
       this.api.get<SessionTemplate[]>('/templates'),
     ]);
     this.roster.set(roster.items);
+    if (roster.items.length > 0) this.monthAthleteId.set(roster.items[0].id);
     this.templates.set(templates);
     const preselect = this.route.snapshot.queryParamMap.get('template');
     if (preselect && templates.some((t) => t.id === preselect)) {
@@ -301,14 +416,47 @@ export class PlanningPage implements OnInit {
     return Boolean(this.assignTemplateId && this.assignDate && this.assignAthletes().size > 0);
   }
 
-  async shiftWeek(delta: number): Promise<void> {
-    this.weekStart.set(addDays(this.weekStart(), delta * 7));
-    await this.loadWeek();
+  async shift(delta: number): Promise<void> {
+    if (this.view() === 'month') {
+      this.monthAnchor.set(addMonths(this.monthAnchor(), delta));
+      await this.loadMonth();
+    } else {
+      this.weekStart.set(addDays(this.weekStart(), delta * 7));
+      await this.loadWeek();
+    }
   }
 
   async goToday(): Promise<void> {
-    this.weekStart.set(mondayOf(new Date()));
-    await this.loadWeek();
+    if (this.view() === 'month') {
+      this.monthAnchor.set(firstOfMonth(new Date()));
+      await this.loadMonth();
+    } else {
+      this.weekStart.set(mondayOf(new Date()));
+      await this.loadWeek();
+    }
+  }
+
+  async setView(view: 'week' | 'month'): Promise<void> {
+    if (this.view() === view) return;
+    this.view.set(view);
+    this.selected.set(null);
+    if (view === 'month') {
+      if (!this.monthAthleteId() && this.roster().length > 0) this.monthAthleteId.set(this.roster()[0].id);
+      await this.loadMonth();
+    } else {
+      await this.loadWeek();
+    }
+  }
+
+  async setMonthAthlete(id: string): Promise<void> {
+    this.monthAthleteId.set(id);
+    this.selected.set(null);
+    await this.loadMonth();
+  }
+
+  monthChipState(s: PlannedSession, day: { today: boolean }): string {
+    if (s.status === 'planned' && day.today) return 'today';
+    return s.status;
   }
 
   toggleAthlete(id: string): void {
@@ -329,7 +477,7 @@ export class PlanningPage implements OnInit {
       });
       this.assignOpen.set(false);
       this.assignAthletes.set(new Set());
-      await this.loadWeek();
+      await this.reload();
     } catch {
       this.assignError.set('Assignation impossible. Réessayez.');
     } finally {
@@ -357,7 +505,7 @@ export class PlanningPage implements OnInit {
     try {
       await this.api.patch(`/sessions/${sel.id}`, { date: this.moveDate });
       this.selected.set(null);
-      await this.loadWeek();
+      await this.reload();
     } finally {
       this.busy.set(false);
     }
@@ -366,17 +514,36 @@ export class PlanningPage implements OnInit {
   async removeSelected(sel: PlannedSessionDetail, scope: 'one' | 'assignment'): Promise<void> {
     await this.api.delete(`/sessions/${sel.id}?scope=${scope}`);
     this.selected.set(null);
-    await this.loadWeek();
+    await this.reload();
   }
 
   async remove(session: PlannedSession): Promise<void> {
     await this.api.delete(`/sessions/${session.id}?scope=one`);
     this.sessions.update((list) => list.filter((s) => s.id !== session.id));
+    this.monthSessions.update((list) => list.filter((s) => s.id !== session.id));
+  }
+
+  private async reload(): Promise<void> {
+    if (this.view() === 'month') await this.loadMonth();
+    else await this.loadWeek();
   }
 
   private async loadWeek(): Promise<void> {
     const from = ymd(this.weekStart());
     const to = ymd(addDays(this.weekStart(), 6));
     this.sessions.set(await this.api.get<PlannedSession[]>(`/sessions?from=${from}&to=${to}`));
+  }
+
+  private async loadMonth(): Promise<void> {
+    const athleteId = this.monthAthleteId();
+    if (!athleteId) {
+      this.monthSessions.set([]);
+      return;
+    }
+    const from = ymd(mondayOf(this.monthAnchor()));
+    const to = ymd(addDays(mondayOf(addDays(addMonths(this.monthAnchor(), 1), -1)), 6));
+    this.monthSessions.set(
+      await this.api.get<PlannedSession[]>(`/sessions?athleteId=${athleteId}&from=${from}&to=${to}`),
+    );
   }
 }

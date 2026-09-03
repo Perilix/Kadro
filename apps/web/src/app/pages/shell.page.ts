@@ -1,10 +1,19 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import type { Conversation, Notification, Page as ApiPage, AthleteListItem } from '@kadro/shared';
 import { ApiClient } from '../core/api-client';
 import { AuthStore } from '../core/auth-store';
+import { RealtimeService } from '../core/realtime.service';
 import { IconComponent } from '../ui/icon.component';
 import { AvatarComponent } from '../ui/avatar.component';
+
+const NOTIF_KIND_LABELS: Record<string, string> = {
+  form: 'Alerte de forme',
+  session: 'Séance',
+  message: 'Message',
+  team: 'Équipe',
+  billing: 'Abonnement',
+};
 
 @Component({
   selector: 'app-shell-page',
@@ -136,10 +145,12 @@ import { AvatarComponent } from '../ui/avatar.component';
     .bp-empty { padding: 10px 16px 14px; margin: 0; font-size: 13px; }
   `,
 })
-export class ShellPage implements OnInit {
+export class ShellPage implements OnInit, OnDestroy {
   readonly auth = inject(AuthStore);
   private readonly api = inject(ApiClient);
   private readonly router = inject(Router);
+  private readonly realtime = inject(RealtimeService);
+  private readonly unsubscribes: (() => void)[] = [];
   readonly athleteCount = signal(0);
   readonly unread = signal(0);
   readonly notifications = signal<Notification[]>([]);
@@ -160,6 +171,23 @@ export class ShellPage implements OnInit {
     this.athleteCount.set(roster?.items.length ?? 0);
     this.unread.set(conversations.reduce((sum, c) => sum + c.unread, 0));
     this.notifications.set(notifs?.items ?? []);
+    this.realtime.connect();
+    this.unsubscribes.push(
+      this.realtime.onNotification((n) => {
+        this.notifications.update((list) => [n, ...list.filter((x) => x.id !== n.id)].slice(0, 20));
+      }),
+      this.realtime.onMessage(() => void this.refreshUnread()),
+      this.realtime.onRead(() => void this.refreshUnread()),
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.unsubscribes.forEach((u) => u());
+  }
+
+  private async refreshUnread(): Promise<void> {
+    const conversations = await this.api.get<Conversation[]>('/conversations').catch(() => []);
+    this.unread.set(conversations.reduce((sum, c) => sum + c.unread, 0));
   }
 
   notifLabel(n: Notification): string {
@@ -170,7 +198,9 @@ export class ShellPage implements OnInit {
       case 'notification.session_feedback':
         return `${from} a envoyé son compte-rendu${n.params['rpe'] != null ? ` — RPE ${n.params['rpe']}/10` : ''}`;
       default:
-        return n.i18nKey;
+        return from
+          ? `${NOTIF_KIND_LABELS[n.kind] ?? 'Notification'} · ${from}`
+          : (NOTIF_KIND_LABELS[n.kind] ?? 'Nouvelle notification');
     }
   }
 

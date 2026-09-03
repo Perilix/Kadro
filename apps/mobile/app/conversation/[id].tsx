@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Message, Page } from '@kadro/shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
+import { onMessage, onRead } from '../../lib/realtime';
 import { radius, useTheme } from '../../lib/theme';
 import { Button, Input } from '../../lib/ui';
 
@@ -28,9 +29,20 @@ export default function ConversationScreen() {
   useFocusEffect(
     useCallback(() => {
       void load();
-      const timer = setInterval(() => void load(), 10_000);
-      return () => clearInterval(timer);
-    }, [load]),
+      const offMessage = onMessage((m) => {
+        if (m.conversationId !== id) return;
+        setMessages((list) => (list.some((x) => x.id === m.id) ? list : [...list, m]));
+        void api.post(`/conversations/${id}/read`).catch(() => undefined);
+      });
+      const offRead = onRead((r) => {
+        if (r.conversationId !== id) return;
+        setMessages((list) => list.map((m) => (m.readAt ? m : { ...m, readAt: new Date().toISOString() })));
+      });
+      return () => {
+        offMessage();
+        offRead();
+      };
+    }, [id, load]),
   );
 
   const send = async () => {

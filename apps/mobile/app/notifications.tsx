@@ -1,11 +1,26 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { Notification, Page } from '@kadro/shared';
+import type { Notification, NotificationKind, Page } from '@kadro/shared';
 import { api } from '../lib/api';
 import { useTheme } from '../lib/theme';
 import { Button, Card } from '../lib/ui';
+
+const KIND_FALLBACKS: Record<NotificationKind, string> = {
+  form: 'Alerte de forme',
+  session: 'Séance mise à jour',
+  message: 'Nouveau message',
+  team: 'Mouvement dans l’équipe',
+  billing: 'Abonnement',
+};
+
+const FILTERS: [NotificationKind | 'all', string][] = [
+  ['all', 'Tout'],
+  ['form', 'Forme'],
+  ['session', 'Séances'],
+  ['message', 'Messages'],
+];
 
 function label(n: Notification): string {
   const from = n.params['from'] ? String(n.params['from']) : '';
@@ -15,7 +30,7 @@ function label(n: Notification): string {
     case 'notification.session_feedback':
       return `${from} a envoyé son compte-rendu${n.params['rpe'] != null ? ` — RPE ${n.params['rpe']}/10` : ''}`;
     default:
-      return n.i18nKey;
+      return from ? `${KIND_FALLBACKS[n.kind]} — ${from}` : KIND_FALLBACKS[n.kind];
   }
 }
 
@@ -23,6 +38,7 @@ export default function NotificationsScreen() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [kind, setKind] = useState<NotificationKind | 'all'>('all');
 
   useFocusEffect(
     useCallback(() => {
@@ -34,6 +50,10 @@ export default function NotificationsScreen() {
   );
 
   const unread = notifications.filter((n) => !n.readAt).length;
+  const visible = useMemo(
+    () => (kind === 'all' ? notifications : notifications.filter((n) => n.kind === kind)),
+    [notifications, kind],
+  );
 
   const markAll = async () => {
     await api.post('/notifications/read', {});
@@ -58,8 +78,27 @@ export default function NotificationsScreen() {
         </Text>
         {unread > 0 ? <Button label="Tout marquer lu" ghost onPress={() => void markAll()} /> : null}
       </View>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        {FILTERS.map(([value, name]) => (
+          <Pressable
+            key={value}
+            onPress={() => setKind(value)}
+            style={{
+              height: 32,
+              paddingHorizontal: 12,
+              borderRadius: 999,
+              justifyContent: 'center',
+              backgroundColor: kind === value ? t.btnPrimaryBg : t.surface,
+              borderWidth: 1,
+              borderColor: kind === value ? t.btnPrimaryBg : t.line,
+            }}
+          >
+            <Text style={{ color: kind === value ? t.btnPrimaryInk : t.ink2, fontSize: 13, fontWeight: '500' }}>{name}</Text>
+          </Pressable>
+        ))}
+      </View>
       <Card style={{ padding: 0, overflow: 'hidden' }}>
-        {notifications.map((n, i) => (
+        {visible.map((n, i) => (
           <View
             key={n.id}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderTopWidth: i ? 1 : 0, borderTopColor: t.line }}
@@ -71,7 +110,7 @@ export default function NotificationsScreen() {
             </View>
           </View>
         ))}
-        {notifications.length === 0 ? (
+        {visible.length === 0 ? (
           <Text style={{ color: t.ink2, fontSize: 13, padding: 16 }}>
             Rien pour l'instant — check-ins rouges, comptes-rendus et messages arriveront ici.
           </Text>
