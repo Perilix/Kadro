@@ -7,6 +7,7 @@ import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { radius, useTheme } from '../../lib/theme';
 import { Card } from '../../lib/ui';
+import { Icon } from '../../lib/icon';
 
 const ALERT_LABELS: Record<string, string> = {
   form_red_streak: 'Fatigue signalée plusieurs jours de suite',
@@ -51,11 +52,19 @@ export default function CoachApercuScreen() {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16, paddingTop: insets.top + 12, gap: 14 }}>
-      <View>
-        <Text style={{ color: t.ink3, fontSize: 13, textTransform: 'capitalize' }}>{dateLabel}</Text>
-        <Text style={{ color: t.ink, fontSize: 26, fontWeight: '600', letterSpacing: -0.5, marginTop: 2 }}>
-          Bonjour {user?.firstName}
-        </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: t.ink3, fontSize: 13, textTransform: 'capitalize' }}>{dateLabel}</Text>
+          <Text style={{ color: t.ink, fontSize: 26, fontWeight: '600', letterSpacing: -0.5, marginTop: 2 }}>
+            Bonjour {user?.firstName}
+          </Text>
+        </View>
+        <Pressable
+          onPress={() => router.push('/notifications')}
+          style={{ width: 40, height: 40, borderRadius: 10, borderWidth: 1, borderColor: t.line, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Icon name="bell" size={20} />
+        </Pressable>
       </View>
 
       {dashboard ? (

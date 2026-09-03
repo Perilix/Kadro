@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AthleteListItem, Page, PlannedSession } from '@kadro/shared';
@@ -66,6 +66,7 @@ export default function CoachPlanningScreen() {
   };
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView contentContainerStyle={{ padding: 16, paddingTop: insets.top + 12, gap: 12 }}>
       <Text style={{ color: t.ink, fontSize: 28, fontWeight: '600', letterSpacing: -0.5 }}>Planning</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -130,6 +131,29 @@ export default function CoachPlanningScreen() {
           </View>
         );
       })}
+      <View style={{ height: 60 }} />
     </ScrollView>
+    <Pressable
+      onPress={() => router.push('/assigner')}
+      style={{
+        position: 'absolute',
+        right: 20,
+        bottom: 24,
+        width: 56,
+        height: 56,
+        borderRadius: 16,
+        backgroundColor: t.btnPrimaryBg,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOpacity: 0.22,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: 6,
+      }}
+    >
+      <Text style={{ color: t.btnPrimaryInk, fontSize: 28, fontWeight: '600', lineHeight: 30 }}>+</Text>
+    </Pressable>
+    </View>
   );
 }
